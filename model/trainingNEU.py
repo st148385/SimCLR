@@ -5,7 +5,46 @@ import tensorflow.keras as ks
 import gin
 import sys
 from utils import utils_params
+cosine_sim_1d = tf.keras.losses.CosineSimilarity(axis=1, reduction=tf.keras.losses.Reduction.NONE)
+cosine_sim_2d = tf.keras.losses.CosineSimilarity(axis=2, reduction=tf.keras.losses.Reduction.NONE)
 
+def _cosine_simililarity_dim1(x, y):
+    v = cosine_sim_1d(x, y)
+    return v
+
+
+def _cosine_simililarity_dim2(x, y):
+    # x shape: (N, 1, C)
+    # y shape: (1, 2N, C)
+    # v shape: (N, 2N)
+    v = cosine_sim_2d(tf.expand_dims(x, 1), tf.expand_dims(y, 0))
+    return v
+
+
+def _dot_simililarity_dim1(x, y):
+    # x shape: (N, 1, C)
+    # y shape: (N, C, 1)
+    # v shape: (N, 1, 1)
+    v = tf.matmul(tf.expand_dims(x, 1), tf.expand_dims(y, 2))
+    return v
+
+
+def _dot_simililarity_dim2(x, y):
+    v = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
+    # x shape: (N, 1, C)
+    # y shape: (1, C, 2N)
+    # v shape: (N, 2N)
+    return v
+
+def get_negative_mask(batch_size):
+    # return a mask that removes the similarity score of equal/similar images.
+    # this function ensures that only distinct pair of images get their similarity scores
+    # passed as negative examples
+    negative_mask = np.ones((batch_size, 2 * batch_size), dtype=bool)
+    for i in range(batch_size):
+        negative_mask[i, i] = 0
+        negative_mask[i, i + batch_size] = 0
+    return tf.constant(negative_mask)
 
 @gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])
 def train(model,
@@ -51,9 +90,9 @@ def train(model,
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
 
         # Train
-        for image1, image2, _ in ds_train:
+        for image, _, _ in ds_train:
             # Train on batch
-            train_step(model, image1, image2, optimizer, metric_loss_train,epoch_tf)
+            train_step(model, image, optimizer, metric_loss_train,epoch_tf)
 
         # Print summary
         if epoch <=0:
@@ -86,14 +125,60 @@ def train(model,
 
 
 @tf.function
-def train_step(model, image, optimizer, metric_loss_train,epoch_tf):
+def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
+
+    # Mask to remove positive examples from the batch of negative samples
+    negative_mask = get_negative_mask(128)
+    batch_size = 128
+    tau = 0.5
+
+
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
-            features, h = model(image,training=True)
-            loss = tf.reduce_mean((1.0-h)**2)  # Example loss, TODO
+
+            h_i, z_i = model(image)  # train_step(model=gen_model_gesamt, image1=image1, iamge2=image2, optimizer=)
+            h_j, z_j = model(image2)  # 'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
+
+            # normalize projection feature vectors
+            z_i = tf.math.l2_normalize(z_i, axis=1)
+            z_j = tf.math.l2_normalize(z_j, axis=1)
+
+            # tf.summary.histogram('z_i', z_i, step=optimizer.iterations)
+            # tf.summary.histogram('z_j', z_j, step=optimizer.iterations)
+
+            l_pos = _dot_simililarity_dim1(z_i, z_j)
+            l_pos = tf.reshape(l_pos, batch_size)
+            l_pos = l_pos / tau
+            # assert l_pos.shape == (config['batch_size'], 1), "l_pos shape not valid" + str(l_pos.shape)  # [N,1]
+
+            negatives = tf.concat([z_j, z_i], axis=0)
+
+            loss = 0
+
+            for positives in [z_i, z_j]:
+                l_neg = _dot_simililarity_dim2(positives, negatives)
+
+                labels = tf.zeros(batch_size, dtype=tf.int32)
+
+                l_neg = tf.boolean_mask(l_neg, negative_mask)
+                l_neg = tf.reshape(l_neg, batch_size)
+                l_neg = l_neg / tau
+
+                # assert l_neg.shape == (
+                #     config['batch_size'], 2 * (config['batch_size'] - 1)), "Shape of negatives not expected." + str(
+                #     l_neg.shape)
+                logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]
+                loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,
+                                                                      reduction=tf.keras.losses.Reduction.SUM)(
+                    y_pred=logits, y_true=labels)
+
+            loss = loss / (2 * batch_size)
+            tf.summary.scalar('loss', loss, step=optimizer.iterations)
+
         gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients,model.trainable_variables))
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
     # Update metrics
     metric_loss_train.update_state(loss)
     tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,

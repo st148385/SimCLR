@@ -1,6 +1,6 @@
 import logging
 from model import input_fn, model_fn
-from model.training import train
+from model.trainingNEU import train
 from utils import utils_params, utils_misc, utils_devices
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -65,9 +65,9 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     #Also image1=x_i, image2=x_j
 
     # Define model
-    model = model_fn.gen_model()
-    #from model.model_fn import gen_model_gesamt
-    #model = gen_model_gesamt()
+    #model = model_fn.gen_model()
+    from model.model_fn import gen_model_gesamt
+    model = gen_model_gesamt()
 
     train(model,
           ds_train,

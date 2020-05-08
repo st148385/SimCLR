@@ -22,8 +22,8 @@ def gen_model_gesamt():
     # Layers
     # f(•)
     inputs = tf.keras.Input((224, 224, 3))
-    h_a_resnet = rn50(inputs)
-    h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a_resnet)
+    h_a = rn50(inputs)
+    #h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a)
     # g(•)
     z_a = tf.keras.layers.Dense(512)(h_a)
     z_a = tf.keras.layers.Activation("relu")(z_a)
