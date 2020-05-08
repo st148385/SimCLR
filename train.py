@@ -26,7 +26,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     utils_params.inject_gin(config_names, path_model_id=path_model_id)
 
     # set device params
-    #utils_devices.set_devices(device)
+    utils_devices.set_devices(device)
 
     # generate training pipeline:
     ds_train, ds_train_info = input_fn.gen_pipeline_train()
@@ -42,11 +42,9 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     #print("print d_train_info:\n", ds_train_info, "\n")                    #tf_flowers
     print("print np.shape(ds_train):\n",np.shape(ds_train),"\n")            #()
 
-    #image, label = ds_train.take(2)
-    #print(image)            #b,a0,a1,a2
-    #plt.imshow(image[:1])   #(1,32,32,3) -> (32,32,3)
 
-    #plt.subplot(4,4)
+
+
     for image1, image2, label in ds_train.take(1):                                      #PrefetchDataset.take(N) nimmt also N image1-, image2- und label-Batches aus ds_train
             #print(np.shape(image1),"\n\n\n")        #(128, 224, 224, 3)
             #print(np.shape(image2),"\n\n\n")        #(128, 224, 224, 3)
@@ -64,6 +62,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
             show( tf.reshape( label[:1], (219,219,3) ) , label )    #Originale Version des ersten Eintrages der Batch -> x
             show(tf.reshape(label[1:2], (219, 219, 3)), label)      #zweites Image von Batch1
             #show(tf.reshape(label[2:3], (219, 219, 3)), label)
+    #Also image1=x_i, image2=x_j
 
     # Define model
     model = model_fn.gen_model()

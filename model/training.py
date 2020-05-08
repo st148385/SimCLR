@@ -128,8 +128,10 @@ def train(model,
 
     return 0
 
+
+
 # Mask to remove positive examples from the batch of negative samples
-negative_mask = get_negative_mask(128)
+#negative_mask = get_negative_mask(128)
 
 @tf.function
 def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
@@ -189,7 +191,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
 
 
 '''
-            #features, h = model(image,training=True)
+            features, h = model(image,training=True)
             loss = tf.reduce_mean((1.0-h)**2)  # Example loss, TODO
 
         gradients = tape.gradient(loss, model.trainable_variables)
