@@ -5,6 +5,7 @@ import tensorflow.keras as ks
 import gin
 import sys
 from utils import utils_params
+import numpy as np
 cosine_sim_1d = tf.keras.losses.CosineSimilarity(axis=1, reduction=tf.keras.losses.Reduction.NONE)
 cosine_sim_2d = tf.keras.losses.CosineSimilarity(axis=2, reduction=tf.keras.losses.Reduction.NONE)
 
@@ -90,9 +91,9 @@ def train(model,
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
 
         # Train
-        for image, _, _ in ds_train:
+        for image, image2, _ in ds_train:
             # Train on batch
-            train_step(model, image, optimizer, metric_loss_train,epoch_tf)
+            train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf)
 
         # Print summary
         if epoch <=0:
@@ -148,7 +149,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
             # tf.summary.histogram('z_j', z_j, step=optimizer.iterations)
 
             l_pos = _dot_simililarity_dim1(z_i, z_j)
-            l_pos = tf.reshape(l_pos, batch_size)
+            l_pos = tf.reshape(l_pos, (batch_size, 1) )
             l_pos = l_pos / tau
             # assert l_pos.shape == (config['batch_size'], 1), "l_pos shape not valid" + str(l_pos.shape)  # [N,1]
 
@@ -162,7 +163,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
                 l_neg = tf.boolean_mask(l_neg, negative_mask)
-                l_neg = tf.reshape(l_neg, batch_size)
+                l_neg = tf.reshape(l_neg, (batch_size, 1) )
                 l_neg = l_neg / tau
 
                 # assert l_neg.shape == (
@@ -176,7 +177,10 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
 
-        gradients = tape.gradient(loss, model.trainable_variables)
+        gradients = tape.gradient(loss, model.trainable_variables)          #error 08.05. || 18:12 Uhr  TODO
+        # ValueError: Cannot reshape a tensor with 128 elements to shape [32512] (32512 elements) for 'Reshape_16' (op:
+        # 'Reshape') with input shapes: [128], [1] and with input tensors computed as partial shapes: input[1] = [32512].
+
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     # Update metrics

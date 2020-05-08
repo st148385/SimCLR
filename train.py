@@ -10,7 +10,7 @@ import numpy as np
 def show(image, label):
     plt.figure()
     plt.imshow(image)
-    plt.title("augmented image")        #plt.title(label.numpy().decode('utf-8'))
+    plt.title(label)        #plt.title(label.numpy().decode('utf-8'))
     plt.axis('off')
 ##########
 
@@ -51,16 +51,16 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
             #print(np.shape(label), "\n\n\n")        #(128, 219, 219, 3)
 
 
-            show(tf.reshape(image1[:1], (224,224,3) ), label)       #Erster Eintrag des EINEN Batch von ds_train.take(1) -> x_i
-            show(tf.reshape(image1[1:2], (224, 224, 3)), label)     #x_i des zweiten Images von Batch1
+            show(tf.reshape(image1[:1], (224,224,3) ), label='x_i_1 von Batch1')        #Erster Eintrag des EINEN Batch von ds_train.take(1) -> x_i
+            show(tf.reshape(image1[1:2], (224, 224, 3)), label='x_i_2 von Batch 1')     #x_i des zweiten Images von Batch1
             #show(tf.reshape(image1[2:3], (224, 224, 3)), label)
 
-            show(tf.reshape(image2[:1], (224, 224, 3)), label)      #Auch erster Eintrag, aber versch. augmentiert -> x_j
-            show(tf.reshape(image2[1:2], (224, 224, 3)), label)     #x_j des zweiten Images von Batch1
+            show(tf.reshape(image2[:1], (224, 224, 3)), label='x_j_1 von Batch1')       #Auch erster Eintrag, aber versch. augmentiert -> x_j
+            show(tf.reshape(image2[1:2], (224, 224, 3)), label='x_j_2 von batch1')      #x_j des zweiten Images von Batch1
             #show(tf.reshape(image2[2:3], (224, 224, 3)), label)
 
-            show( tf.reshape( label[:1], (219,219,3) ) , label )    #Originale Version des ersten Eintrages der Batch -> x
-            show(tf.reshape(label[1:2], (219, 219, 3)), label)      #zweites Image von Batch1
+            show( tf.reshape( label[:1], (219,219,3) ) , label='Original x_1')          #Originale Version des ersten Eintrages der Batch -> x
+            show(tf.reshape(label[1:2], (219, 219, 3)), label='Original x_2')           #zweites Image von Batch1
             #show(tf.reshape(label[2:3], (219, 219, 3)), label)
     #Also image1=x_i, image2=x_j
 
