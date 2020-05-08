@@ -132,14 +132,14 @@ def train(model,
 negative_mask = get_negative_mask(128)
 
 @tf.function
-def train_step(model, image1, image2, optimizer, metric_loss_train,epoch_tf):
+def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
             '''
             batch_size=128
             tau=0.5
-            h_i, z_i = model(image1)                    #train_step(model=gen_model_gesamt, image1=image1, iamge2=image2, optimizer=)
+            h_i, z_i = model(image)                    #train_step(model=gen_model_gesamt, image1=image1, iamge2=image2, optimizer=)
             h_j, z_j = model(image2)                    #'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
 
             # normalize projection feature vectors
