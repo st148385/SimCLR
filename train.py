@@ -48,7 +48,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     for image1, image2, label in ds_train.take(1):                                      #PrefetchDataset.take(N) nimmt also N image1-, image2- und label-Batches aus ds_train
             #print(np.shape(image1),"\n\n\n")        #(128, 224, 224, 3)
             #print(np.shape(image2),"\n\n\n")        #(128, 224, 224, 3)
-            #print(np.shape(label), "\n\n\n")        #(128, 224, 224, 3)
+            #print(np.shape(label), "\n\n\n")        #(128, 219, 219, 3)
 
 
             show(tf.reshape(image1[:1], (224,224,3) ), label)       #Erster Eintrag des EINEN Batch von ds_train.take(1) -> x_i
