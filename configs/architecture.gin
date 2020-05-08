@@ -1,0 +1,5 @@
+# Network architecture
+gen_model.Architecture = @ExampleModel
+gen_model.n_filters_in = 16
+gen_model.kernel_size = 3
+gen_model.dim_h = 10
