@@ -11,9 +11,30 @@ x=51,1
 
 #print(tfds.list_builders())
 
+c = tf.constant([1.0, 2.0])
+c=tf.math.l2_normalize(c)       #Vektor c / sqrt(1**2 + 2**2) = [[1,2]]/sqrt(5) = [[1/sqrt(5),2/sqrt(5)]] = [[0.4472,0.8944]]
+print(c,"\n")
 
+d = tf.constant( [ [[1.0, 2.0],[5,-1]], [[1,2],[5,-1]] ] )
+print( tf.math.l2_normalize(d, axis=1) )
 
+'''
+J1 = tf.ones( (128,1) )
+J2 = tf.ones( (128,1) )
 
+print(tf.concat( (J1,J2), axis=0 ))
+print(tf.concat( (J1,J2), axis=1 ))
+'''
+'''
+#AssertionError:
+meineliste = ['element']    #meineliste: ['element']
+
+assert len(meineliste) >= 1
+meineliste.pop()    #meineliste: []
+
+assert len(meineliste) >= 1
+#-> AssertionError, weil len(meineliste) < 1, wodurch [len(meineliste) >= 1]=False
+'''
 
 #"@tf.function" allows for the intuitive use of both eager execution and AutoGraph, whereby a function can be run using Python syntax initially
 #and #then transferred into the equivalent graph code.
@@ -26,7 +47,7 @@ x=51,1
 
 #_fkt_name für private
 #dataset.map(funktion) führt funktion auf jedes einzelne element von dataset aus
-
+'''
 import tensorflow as tf
 import datetime
 import os
@@ -139,3 +160,4 @@ if not os.path.exists(model_checkpoints_folder):
     shutil.copy('./config.yaml', os.path.join(model_checkpoints_folder, 'config.yaml'))
 
 model.save_weights(os.path.join(model_checkpoints_folder, 'model.h5'))
+'''

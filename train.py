@@ -40,7 +40,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
     print("print ds_train:\n", ds_train, "\n")   #<PrefetchDataset shapes: ((128, 224, 224, 3), (128, 224, 224, 3), (128, 224, 224, 3)), types: (tf.float32, tf.float32, tf.float32)>
     #print("print d_train_info:\n", ds_train_info, "\n")                    #tf_flowers
-    print("print np.shape(ds_train):\n",np.shape(ds_train),"\n")            #()
+    #print("print np.shape(ds_train):\n",np.shape(ds_train),"\n")            #()
 
 
 
@@ -68,6 +68,8 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     #model = model_fn.gen_model()
     from model.model_fn import gen_model_gesamt
     model = gen_model_gesamt()
+
+    model.summary()
 
     train(model,
           ds_train,

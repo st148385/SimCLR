@@ -130,10 +130,9 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
     # Mask to remove positive examples from the batch of negative samples
-    negative_mask = get_negative_mask(128)
     batch_size = 128
     tau = 0.5
-
+    negative_mask = get_negative_mask(batch_size)
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
@@ -141,45 +140,67 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
             h_i, z_i = model(image)  # train_step(model=gen_model_gesamt, image1=image1, iamge2=image2, optimizer=)
             h_j, z_j = model(image2)  # 'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
 
+            ###Shapes: z_i=(128,128), h_i=(128,2048)
+
             # normalize projection feature vectors
-            z_i = tf.math.l2_normalize(z_i, axis=1)
+            z_i = tf.math.l2_normalize(z_i, axis=1)         #Vektor z = z/||z||
             z_j = tf.math.l2_normalize(z_j, axis=1)
+
+            ###Shape: z_i=(128,128)
 
             # tf.summary.histogram('z_i', z_i, step=optimizer.iterations)
             # tf.summary.histogram('z_j', z_j, step=optimizer.iterations)
 
-            l_pos = _dot_simililarity_dim1(z_i, z_j)
-            l_pos = tf.reshape(l_pos, (batch_size, 1) )
+            l_pos = _dot_simililarity_dim1(z_i, z_j)    #l_pos = tf.matmul(tf.expand_dims(x, 1), tf.expand_dims(y, 2)), d.h. shape(z_i) wird (•,1,•) und shape(z_j) wird (•,•,1)
+            l_pos = tf.reshape(l_pos, (batch_size, 1) ) #l_pos erhält shape=(128,1) -> column vector
             l_pos = l_pos / tau
-            # assert l_pos.shape == (config['batch_size'], 1), "l_pos shape not valid" + str(l_pos.shape)  # [N,1]
 
-            negatives = tf.concat([z_j, z_i], axis=0)
+            ###Shape: l_pos=(128,1)
+                                                                # assert l_pos.shape == (config['batch_size'], 1), "l_pos shape not valid" + str(l_pos.shape)  # [N,1]
+
+            negatives = tf.concat([z_j, z_i], axis=0)   #concat: Wenn z_j shape (a,b) und z_i shape (a,b) haben, hat negatives shape (a+a,b)
+                                                        #Mit axis=1 hätte im selben Beispiel negatives die shape (a,b+b)
+            ###Shape: negatives=256,128
 
             loss = 0
 
             for positives in [z_i, z_j]:
-                l_neg = _dot_simililarity_dim2(positives, negatives)
+                l_neg = _dot_simililarity_dim2(positives, negatives)    #l_neg = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
+
+                ###Shape: l_neg=(128,256)
 
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
+                ###Shape: labels=(128,)
+
                 l_neg = tf.boolean_mask(l_neg, negative_mask)
+
+                ###Shape: l_neg=(None,)
+
                 l_neg = tf.reshape(l_neg, (batch_size, 1) )
+
+                ###Shape: l_neg=(128,1)
+
                 l_neg = l_neg / tau
 
                 # assert l_neg.shape == (
                 #     config['batch_size'], 2 * (config['batch_size'] - 1)), "Shape of negatives not expected." + str(
                 #     l_neg.shape)
-                logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]
-                loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,
-                                                                      reduction=tf.keras.losses.Reduction.SUM)(
-                    y_pred=logits, y_true=labels)
+                logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
+                ###Shape: logits=(128,2)
+
+                loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
+
+                ###Shape: loss=(), loss soll ein Skalar sein und ist hier auch ein Skalar
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
 
+        print("Vor Error")
         gradients = tape.gradient(loss, model.trainable_variables)          #error 08.05. || 18:12 Uhr  TODO
         # ValueError: Cannot reshape a tensor with 128 elements to shape [32512] (32512 elements) for 'Reshape_16' (op:
         # 'Reshape') with input shapes: [128], [1] and with input tensors computed as partial shapes: input[1] = [32512].
+        print("Nach Error")
 
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
