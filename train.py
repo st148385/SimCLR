@@ -69,7 +69,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     from model.model_fn import gen_model_gesamt
     model = gen_model_gesamt()
 
-    model.summary()
+    model.summary() ##
 
     train(model,
           ds_train,
