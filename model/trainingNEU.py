@@ -160,7 +160,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
 
             negatives = tf.concat([z_j, z_i], axis=0)   #concat: Wenn z_j shape (a,b) und z_i shape (a,b) haben, hat negatives shape (a+a,b)
                                                         #Mit axis=1 hätte im selben Beispiel negatives die shape (a,b+b)
-            ###Shape: negatives=256,128
+            ###Shape: negatives=(256,128)
 
             loss = 0
 

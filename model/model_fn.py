@@ -14,7 +14,8 @@ def gen_model(Architecture, **kwargs):
 
 #############################################################################################
 #f und g
-def gen_model_gesamt():
+@gin.configurable()
+def gen_model_gesamt(Architecture):
     rn50 = tf.keras.applications.ResNet50(include_top=False, weights=None, input_tensor=None, input_shape=None,
                                           pooling='avg')
     rn50.training = True
@@ -29,7 +30,7 @@ def gen_model_gesamt():
     z_a = tf.keras.layers.Activation("relu")(z_a)
     z_a = tf.keras.layers.Dense(128)(z_a)
 
-    model=tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])
+    model=Architecture(inputs=inputs, outputs=[h_a, z_a])
 
     return model
 #############################################################################################
