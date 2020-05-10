@@ -187,11 +187,12 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
                 #     config['batch_size'], 2 * (config['batch_size'] - 1)), "Shape of negatives not expected." + str(
                 #     l_neg.shape)
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
+
                 ###Shape: logits=(128,2)
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
 
-                ###Shape: loss=(), loss soll ein Skalar sein und ist hier auch ein Skalar
+                ###Shape: loss=()   (loss soll ein Skalar sein und ist hier auch ein Skalar)
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
