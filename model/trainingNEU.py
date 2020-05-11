@@ -198,7 +198,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
 
                 l_neg = tf.reshape(l_neg, (batch_size, -1) )
 
-                #Error: reshape (32512,) -> (128,1)
+                #Error: reshape (32512,) -> (128,1). Stattdessen jetzt (32512,) -> (128,32512/128)=(128,256)
 
                 #print("l_neg:\n", l_neg.shape)
                 ###Shape: l_neg=(128,1)
@@ -208,9 +208,13 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
                 # assert l_neg.shape == (
                 #     config['batch_size'], 2 * (config['batch_size'] - 1)), "Shape of negatives not expected." + str(
                 #     l_neg.shape)
+
+                print("l_neg:\n", l_neg.shape)
+                print("l_pos:\n", l_pos.shape)
+
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
 
-                #print("logits:\n", logits)     #(128,255)
+                print("logits:\n", logits)     #(128,255)
                 ###Shape: logits=(128,2)
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)

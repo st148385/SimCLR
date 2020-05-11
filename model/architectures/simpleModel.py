@@ -15,7 +15,7 @@ def Architechture(input_size=32, n_filters_in=16, kernel_size=3, neurons=128):
     h_a = tf.keras.layers.MaxPool2D(pool_size=2, strides=2)(h_a)
 
     h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a)
-    h_a = tf.keras.layers.Dense(neurons)(h_a)
+    #h_a = tf.keras.layers.Dense(neurons)(h_a)
 
     # g(•)
     z_a = tf.keras.layers.Dense(neurons)(h_a)
