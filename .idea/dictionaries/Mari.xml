@@ -2,7 +2,9 @@
   <dictionary name="Mari">
     <words>
       <w>dataset</w>
+      <w>gesamt</w>
       <w>relu</w>
+      <w>resnet</w>
     </words>
   </dictionary>
 </component>

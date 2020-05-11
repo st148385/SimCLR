@@ -12,10 +12,23 @@ def gen_model(Architecture, **kwargs):
 
     return model
 
+
+#Erhält jetzt eine Architecture aus 'architectures', z.B. 'testModel' über architecture.gin: "gen_model.Architecture = @testModel"
+
+
+
+
+
+
+
+
+
+
+
 #############################################################################################
 #f und g
 @gin.configurable()
-def gen_model_gesamt(Architecture):
+def gen_model_gesamt():
     rn50 = tf.keras.applications.ResNet50(include_top=False, weights=None, input_tensor=None, input_shape=None,
                                           pooling='avg')
     rn50.training = True
@@ -30,7 +43,7 @@ def gen_model_gesamt(Architecture):
     z_a = tf.keras.layers.Activation("relu")(z_a)
     z_a = tf.keras.layers.Dense(128)(z_a)
 
-    model=Architecture(inputs=inputs, outputs=[h_a, z_a])
+    model=tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])
 
     return model
 #############################################################################################

@@ -140,11 +140,21 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
             h_i, z_i = model(image)  # train_step(model=gen_model_gesamt, image1=image1, iamge2=image2, optimizer=)
             h_j, z_j = model(image2)  # 'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
 
+            ###Soll: h=(batch_size,h_dim) , also (128,128)
+            ###Und z=(batch_size,128) , also (128,128)
+
+            ###Ist: h_i: (128, 4, 4, 128)  ||  z_i: (128, 4, 4, 128)
+
+            print("h_i:\n",h_i.shape)
+            print("z_i:\n",z_i.shape)
+            tf.print("tf.print -> h_i:\n", h_i.shape)
+            tf.print("tf.print -> z_i:\n", z_i.shape)
             ###Shapes: z_i=(128,128), h_i=(128,2048)
 
             # normalize projection feature vectors
             z_i = tf.math.l2_normalize(z_i, axis=1)         #Vektor z = z/||z||
             z_j = tf.math.l2_normalize(z_j, axis=1)
+
 
             ###Shape: z_i=(128,128)
 
@@ -196,7 +206,8 @@ def train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf):
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
-
+        print(loss)
+        print(model.trainable_variables.shape)
         print("Vor Error")
         gradients = tape.gradient(loss, model.trainable_variables)          #error 08.05. || 18:12 Uhr  TODO
         # ValueError: Cannot reshape a tensor with 128 elements to shape [32512] (32512 elements) for 'Reshape_16' (op:

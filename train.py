@@ -44,38 +44,33 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
 
 
-
+    im_size=32
     for image1, image2, label in ds_train.take(1):                                      #PrefetchDataset.take(N) nimmt also N image1-, image2- und label-Batches aus ds_train
-            #print(np.shape(image1),"\n\n\n")        #(128, 224, 224, 3)
-            #print(np.shape(image2),"\n\n\n")        #(128, 224, 224, 3)
-            #print(np.shape(label), "\n\n\n")        #(128, 219, 219, 3)
+            print("shape(image1):", np.shape(image1),  "\n\n\n")        #(128, im_size, im_size, 3)
+            print("shape(image2):", np.shape(image2),  "\n\n\n")        #(128, im_size, im_size, 3)
+            print("shape(original):", np.shape(label), "\n\n\n")        #(128, im_size, im_size, 3)
 
 
-            show(tf.reshape(image1[:1], (224,224,3) ), label='x_i_1 von Batch1')        #Erster Eintrag des EINEN Batch von ds_train.take(1) -> x_i
-            show(tf.reshape(image1[1:2], (224, 224, 3)), label='x_i_2 von Batch 1')     #x_i des zweiten Images von Batch1
-            #show(tf.reshape(image1[2:3], (224, 224, 3)), label)
+            # show(tf.reshape(image1[:1], (im_size,im_size,3) ), label='x_i_1 von Batch1')        #Erster Eintrag des EINEN Batch von ds_train.take(1) -> x_i
+            # show(tf.reshape(image1[1:2], (im_size, im_size, 3)), label='x_i_2 von Batch 1')     #x_i des zweiten Images von Batch1
+            #
+            # show(tf.reshape(image2[:1], (im_size, im_size, 3)), label='x_j_1 von Batch1')       #Auch erster Eintrag, aber versch. augmentiert -> x_j
+            # show(tf.reshape(image2[1:2], (im_size, im_size, 3)), label='x_j_2 von batch1')      #x_j des zweiten Images von Batch1
+            #
+            # show( tf.reshape( label[:1], (im_size,im_size,3) ) , label='Original x_1')          #Originale Version des ersten Eintrages der Batch -> x
+            # show(tf.reshape(label[1:2], (im_size, im_size, 3)), label='Original x_2')           #zweites Image von Batch1
 
-            show(tf.reshape(image2[:1], (224, 224, 3)), label='x_j_1 von Batch1')       #Auch erster Eintrag, aber versch. augmentiert -> x_j
-            show(tf.reshape(image2[1:2], (224, 224, 3)), label='x_j_2 von batch1')      #x_j des zweiten Images von Batch1
-            #show(tf.reshape(image2[2:3], (224, 224, 3)), label)
 
-            show( tf.reshape( label[:1], (219,219,3) ) , label='Original x_1')          #Originale Version des ersten Eintrages der Batch -> x
-            show(tf.reshape(label[1:2], (219, 219, 3)), label='Original x_2')           #zweites Image von Batch1
-            #show(tf.reshape(label[2:3], (219, 219, 3)), label)
-    #Also image1=x_i, image2=x_j
 
     # Define model
-    #model = model_fn.gen_model()
-    from model.model_fn import gen_model_gesamt
-    model = gen_model_gesamt(Architecture=tf.keras.Model)
+    model = model_fn.gen_model()
 
-    model.summary()
+    #model.summary()
 
     train(model,
           ds_train,
           ds_train_info,
           run_paths)
-
 
 
 #main()

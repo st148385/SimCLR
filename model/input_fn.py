@@ -6,15 +6,8 @@ import gin
 from model.augmentation_functions import gaussian_filter
 from model.augmentation_functions import random_crop_with_resize
 from model.augmentation_functions import color_distortion
-#############################################################################################
-# Funktionen
 
-#############################################################################################
-#############################################################################################
-#############################################################################################
-#############################################################################################
-#############################################################################################
-#############################################################################################
+
 
 @gin.configurable                          #Verwendet für darauffolgende Definition die Parameter aus gin.configurable (benutzt wohl config.gin)
 def gen_pipeline_train(ds_name='cifar10',#='mnist',
@@ -25,7 +18,9 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
                        shuffle_buffer_size=0,
                        dataset_cache=False,
                        use_random_flip=True,
-                       num_parallel_calls=10):
+                       num_parallel_calls=10,
+                       x_size=32
+                       ):
     # Load and prepare tensorflow dataset
     data, info = tfds.load(name=ds_name,
                            data_dir=tfds_path,
@@ -42,8 +37,12 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
         # reshape if mnist or fmnist, makes for fun to use mnist at 32x32
         if ds_name in ['mnist', 'fashion_mnist']:
             image = tf.image.resize(image, size=(32, 32))
-        if ds_name in ['tf_flowers', 'cifar10']:
-            image = tf.image.resize(image, size=(219,219))          #int(219)*0.1=21=odd
+            x_size=32
+        if ds_name in ['tf_flowers']:
+            image = tf.image.resize(image, size=(219,219))        #int(219*0.1)=21=odd
+            x_size=219                                            # gaussian blur: k_size = int(v1.shape[1] * 0.1)  # kernel size is set to be 10% of the image height/width
+        if ds_name in ['cifar10']:
+            x_size=32
         # Cast image type and normalize to 0/1
         image = tf.cast(image, tf.float32) / 255.0
 
@@ -60,13 +59,13 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
 
         x_i, x_j = gaussian_filter(image, image)
 
-        x_i = random_crop_with_resize(x_i, 224, 224)
+        x_i = random_crop_with_resize(x_i, x_size, x_size)
         x_i = color_distortion(x_i)
 
-        x_j = random_crop_with_resize(x_j, 224, 224)#(x_j, 224, 224)
+        x_j = random_crop_with_resize(x_j, x_size, x_size)
         x_j = color_distortion(x_j)
 
-        # TODO
+
         # Data augmentation takes place here ;) here, one image is processed, not a batch so maybe return patch1, patch2, label
         return x_i, x_j, label
 
