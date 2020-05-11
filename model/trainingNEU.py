@@ -209,8 +209,8 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
                 #     config['batch_size'], 2 * (config['batch_size'] - 1)), "Shape of negatives not expected." + str(
                 #     l_neg.shape)
 
-                print("l_neg:\n", l_neg.shape)
-                print("l_pos:\n", l_pos.shape)
+                #print("l_pos:\n", l_pos.shape)         #(128,1)        (2 Images der 2N=2Batch_Size Images bilden ein positive pair)
+                # print("l_neg:\n", l_neg.shape)        #(128,254)      (Die verbleibenden 2N-2=254 Images liefern die negatives)
 
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
 
