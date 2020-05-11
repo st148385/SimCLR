@@ -15,7 +15,7 @@ def _cosine_simililarity_dim1(x, y):
 
 
 def _cosine_simililarity_dim2(x, y):
-    # x shape: (N, 1, C)
+    # x shape: (N, 1, C)            (N=batch_size)
     # y shape: (1, 2N, C)
     # v shape: (N, 2N)
     v = cosine_sim_2d(tf.expand_dims(x, 1), tf.expand_dims(y, 0))
@@ -124,6 +124,7 @@ def train(model,
 
     return 0
 
+#@gin.configurable
 
 #@tf.function
 def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):
@@ -140,51 +141,66 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
             h_j, z_j = model(image2)  # 'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
 
 
-            print("h_i:\n",h_i.shape)
-            print("z_i:\n",z_i.shape)
+            #print("h_i:\n",h_i.shape)       #(128,128)
+            #print("z_i:\n",z_i.shape)       #(128,128)
 
             #tf.print("tf.print -> h_i:\n", h_i.shape)
             #tf.print("tf.print -> z_i:\n", z_i.shape)
+
             ###Shapes: z_i=(128,128), h_i=(128,2048)
 
             # normalize projection feature vectors
             z_i = tf.math.l2_normalize(z_i, axis=1)         #Vektor z = z/||z||
             z_j = tf.math.l2_normalize(z_j, axis=1)
 
-            print("z_i:\n", z_i.shape)
+            #print("z_i:\n", z_i.shape)      #(128,128)
             ###Shape: z_i=(128,128)
 
             # tf.summary.histogram('z_i', z_i, step=optimizer.iterations)
             # tf.summary.histogram('z_j', z_j, step=optimizer.iterations)
 
             l_pos = _dot_simililarity_dim1(z_i, z_j)    #l_pos = tf.matmul(tf.expand_dims(x, 1), tf.expand_dims(y, 2)), d.h. shape(z_i) wird (•,1,•) und shape(z_j) wird (•,•,1)
+
+            #print("l_pos:\n", l_pos.shape)  #(128,1,1)
+
             l_pos = tf.reshape(l_pos, (batch_size, 1) ) #l_pos erhält shape=(128,1) -> column vector
+
+            #print("l_pos:\n", l_pos.shape)  #(128,1)
+
             l_pos = l_pos / tau
 
-            ###Shape: l_pos=(128,1)
-                                                                # assert l_pos.shape == (config['batch_size'], 1), "l_pos shape not valid" + str(l_pos.shape)  # [N,1]
+            #print("l_pos:\n", l_pos.shape)  #(128,1)
+
+            assert l_pos.shape == (batch_size, 1), "l_pos shape ist falsch!" + str(l_pos.shape)  # [N,1]
+
+            #print("z_i:\n", z_i.shape)  #(128,128)
+            #print("z_j:\n", z_j.shape)  #(128,128)
 
             negatives = tf.concat([z_j, z_i], axis=0)   #concat: Wenn z_j shape (a,b) und z_i shape (a,b) haben, hat negatives shape (a+a,b)
                                                         #Mit axis=1 hätte im selben Beispiel negatives die shape (a,b+b)
-            ###Shape: negatives=(256,128)
+
+            print("negatives:\n", negatives.shape)  #(256,128)
 
             loss = 0
 
             for positives in [z_i, z_j]:
+                #print("negatives:\n", negatives.shape) #256,128
+                #print("positives:\n", positives.shape) #128,128
                 l_neg = _dot_simililarity_dim2(positives, negatives)    #l_neg = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
 
-                ###Shape: l_neg=(128,256)
+                #print("l_neg:\n", l_neg.shape)         #128,256
 
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
-                ###Shape: labels=(128,)
+                l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size)
 
-                l_neg = tf.boolean_mask(l_neg,  get_negative_mask(batch_size)  )        #negative_mask = get_negative_mask(batch_size)
+                #print("l_neg:\n", l_neg.shape)          #(32512,)       #128*256=32512
 
-                ###Shape: l_neg=(None,)
+                l_neg = tf.reshape(l_neg, (batch_size, -1) )
 
-                l_neg = tf.reshape(l_neg, (batch_size, 1) )
+                #Error: reshape (32512,) -> (128,1)
 
+                #print("l_neg:\n", l_neg.shape)
                 ###Shape: l_neg=(128,1)
 
                 l_neg = l_neg / tau
@@ -194,10 +210,12 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
                 #     l_neg.shape)
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
 
+                print("logits:\n", logits)
                 ###Shape: logits=(128,2)
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
 
+                print("loss:\n", loss.shape)
                 ###Shape: loss=()   (loss soll ein Skalar sein und ist hier auch ein Skalar)
 
             loss = loss / (2 * batch_size)
