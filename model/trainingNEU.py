@@ -137,7 +137,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
 
-            h_i, z_i = model(image)  # train_step(model=gen_model_gesamt, image1=image1, iamge2=image2, optimizer=)
+            h_i, z_i = model(image)  # train_step(model=gen_model_gesamt, image1=image1, image2=image2, optimizer=)
             h_j, z_j = model(image2)  # 'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
 
 
@@ -179,7 +179,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
             negatives = tf.concat([z_j, z_i], axis=0)   #concat: Wenn z_j shape (a,b) und z_i shape (a,b) haben, hat negatives shape (a+a,b)
                                                         #Mit axis=1 hätte im selben Beispiel negatives die shape (a,b+b)
 
-            print("negatives:\n", negatives.shape)  #(256,128)
+            #print("negatives:\n", negatives.shape)  #(256,128)
 
             loss = 0
 
@@ -210,23 +210,24 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
                 #     l_neg.shape)
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
 
-                print("logits:\n", logits)
+                #print("logits:\n", logits)     #(128,255)
                 ###Shape: logits=(128,2)
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
 
-                print("loss:\n", loss.shape)
+                #print("loss:\n", loss.shape)   #()
+
                 ###Shape: loss=()   (loss soll ein Skalar sein und ist hier auch ein Skalar)
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
         print(loss)
         #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
-        print("Vor Error")
+
         gradients = tape.gradient(loss, model.trainable_variables)          #error 08.05. || 18:12 Uhr  TODO
         # ValueError: Cannot reshape a tensor with 128 elements to shape [32512] (32512 elements) for 'Reshape_16' (op:
         # 'Reshape') with input shapes: [128], [1] and with input tensors computed as partial shapes: input[1] = [32512].
-        print("Nach Error")
+
 
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
