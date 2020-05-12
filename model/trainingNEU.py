@@ -185,16 +185,16 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
 
             for positives in [z_i, z_j]:
                 #print("negatives:\n", negatives.shape) #256,128
-                #print("positives:\n", positives.shape) #128,128
+                #print("positives:\n", positives.shape) #128,128        #positives ist 1x z_i, dann 1x z_j
                 l_neg = _dot_simililarity_dim2(positives, negatives)    #l_neg = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
 
                 #print("l_neg:\n", l_neg.shape)         #128,256
 
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
-                l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size)
+                l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size) # alle elemente der diagnole vervwerfen
 
-                #print("l_neg:\n", l_neg.shape)          #(32512,)       #128*256=32512
+                #print("l_neg:\n", l_neg.shape)          #(32512,)       #127*256=32512
 
                 l_neg = tf.reshape(l_neg, (batch_size, -1) )
 
@@ -214,7 +214,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
 
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
 
-                print("logits:\n", logits)     #(128,255)
+                #print("logits:\n", logits)     #(128,255)
                 ###Shape: logits=(128,2)
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
