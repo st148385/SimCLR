@@ -1,6 +1,6 @@
 # Network architecture
-gen_model.Architecture = @simpleModel
-gen_model.input_size = 32
+gen_model.Architecture = @resnetModel
+gen_model.input_size = 224  ###
 gen_model.n_filters_in = 16
 gen_model.kernel_size = 3
 gen_model.neurons = 128
