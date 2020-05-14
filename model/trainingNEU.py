@@ -185,23 +185,28 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
 
             for positives in [z_i, z_j]:
                 #print("negatives:\n", negatives.shape) #256,128
-                #print("positives:\n", positives.shape) #128,128        #positives ist 1x z_i, dann 1x z_j
+                #print("positives:\n", positives.shape) #128,128        #positives ist 1 Mal z_i, und dann 1 Mal z_j   (z_i und z_j entsprechen halt dem ganzen Batch)
                 l_neg = _dot_simililarity_dim2(positives, negatives)    #l_neg = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
 
                 #print("l_neg:\n", l_neg.shape)         #128,256
+
+                #VORSICHT: vor der tf.boolean_mask hat l_neg 128*256=32768 Elemente.
+                #Danach ist aber die komplette Diagonale von get_negative_mask(batch_size) 'False'. Dadurch werden von l_neg durch tf.boolean_mask so viele
+                #Elemente entfernt, wie es eben Elemente in der Diagonalen gibt.
+                # (Alle Stellen mit 'False' werden aus l_neg gelöscht, sodass sie nicht berechnet werden müssen)
 
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
                 l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size) # alle elemente der diagnole vervwerfen
 
-                #print("l_neg:\n", l_neg.shape)          #(32512,)       #127*256=32512
+                #print("l_neg:\n", l_neg.shape)          #(32512,)       #127*256=32512, bzw. 128*254=32512
 
                 l_neg = tf.reshape(l_neg, (batch_size, -1) )
 
-                #Error: reshape (32512,) -> (128,1). Stattdessen jetzt (32512,) -> (128,32512/128)=(128,256)
+                #Error: reshape (32512,) -> (128,1). Stattdessen jetzt (32512,) -> (128,32512/128)=(128,254)
 
-                #print("l_neg:\n", l_neg.shape)
-                ###Shape: l_neg=(128,1)
+                #print("l_neg:\n", l_neg.shape)     #(128,254)
+
 
                 l_neg = l_neg / tau
 
@@ -210,7 +215,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
                 #     l_neg.shape)
 
                 #print("l_pos:\n", l_pos.shape)         #(128,1)        (2 Images der 2N=2Batch_Size Images bilden ein positive pair)
-                # print("l_neg:\n", l_neg.shape)        #(128,254)      (Die verbleibenden 2N-2=254 Images liefern die negatives)
+                #print("l_neg:\n", l_neg.shape)         #(128,254)      (Die verbleibenden 2N-2=254 Images liefern die negatives)
 
                 logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
 
