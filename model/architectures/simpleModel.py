@@ -14,6 +14,16 @@ def Architechture(input_size=32, n_filters_in=16, kernel_size=3, neurons=128):
     h_a = tf.keras.layers.Conv2D(filters=n_filters_in * 2 ** 1, kernel_size=kernel_size, strides=(2, 2), padding='same', activation='relu')(h_a)
     h_a = tf.keras.layers.MaxPool2D(pool_size=2, strides=2)(h_a)
 
+    h_a = tf.keras.layers.Conv2D(filters=n_filters_in * 2 ** 2, kernel_size=kernel_size, strides=(2, 2), padding='same',             activation='relu')(h_a)
+    h_a = tf.keras.layers.MaxPool2D(pool_size=2, strides=2)(h_a)
+
+    h_a = tf.keras.layers.Conv2D(filters=n_filters_in * 2 ** 3, kernel_size=kernel_size, strides=(2, 2), padding='same',             activation='relu')(h_a)
+    h_a = tf.keras.layers.MaxPool2D(pool_size=2, strides=2)(h_a)
+
+
+
+
+
     h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a) #2048
     #h_a = tf.keras.layers.Dense(neurons)(h_a)
 

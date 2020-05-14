@@ -93,7 +93,7 @@ def train(model,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
-            train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=128, tau=0.5)
+            train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=128, tau=0.2)
 
         # Print summary
         if epoch <=0:
