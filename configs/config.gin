@@ -6,7 +6,7 @@ set_devices.num_cpu_threads = %num_cpu_threads
 set_devices.soft_device_placement = False
 
 # Input Pipeline
-ds_name = 'tf_flowers'    #'cifar10'         #Speichert in C:\Users\Mari\tensorflow_datasets
+ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
 tfds_path = '~/tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
                                             #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
                                             #Wie Alex oben geschrieben hat, muss ich "\\" (Windows) für Linux (ISS GPUs) auf "/" ändern.
@@ -19,7 +19,7 @@ gen_pipeline_train.size_buffer_cpu = 2
 gen_pipeline_train.shuffle_buffer_size = 50000
 gen_pipeline_train.num_parallel_calls = %num_cpu_threads
 gen_pipeline_train.use_random_flip = True
-gen_pipeline_train.x_size = 224 ###
+gen_pipeline_train.x_size = 32 ###
 
 
 

@@ -126,7 +126,7 @@ def train(model,
 
 #@gin.configurable
 
-#@tf.function
+@tf.function
 def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
