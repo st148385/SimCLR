@@ -58,20 +58,36 @@ label_batch = label_batch.numpy()
 ##############################################################################################################
 #Teil 3: Transfer Learning (also Verwendung von ImageNet mit unserem Udacity5-Datenset und eben nur 2 möglichen Outputs, bzw. logits: Cat oder Dog)
 
-URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/2"
+#URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/2"
 #feature_extractor = hub.KerasLayer(URL, input_shape=(IMAGE_RES, IMAGE_RES,3))
+
+# import os
+#
+# path = r"C:\\Users\Mari\PycharmProjects\experiments\models"
+# os.chdir(path)
+# files = sorted(os.listdir(os.getcwd()), key=os.path.getmtime)
+#
+# newest = files[-1]
+#
+# print("Nehme neuesten Checkpoint namens: ", newest)
+
+
+ckpt = tf.train.Checkpoint()
+feature_extractor = ckpt.restore("C:\\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15\ckpts\ckpt-48")
+# ... make sure the variables are created
+feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
 
 #feature_batch = feature_extractor(image_batch)
 #print(feature_batch.shape, "(32 is the number of images and 1280 is the number of neurons in the last layer of the ""partial model"" of tensorflow hub)\n\n")
 #print("1280 statt 1001 weil ""because we cut off the last layer of MobileNet""")
 
-#Wie im Kurs beschrieben wurde, müssen wir ImageNet "freezen", so dass keine der weights und biases von ImageNet durch unseren Code neu trainiert werden. (Das würde den Sinn von transfer learning kaputt machen)
+#Wie im Kurs beschrieben wurde, müssen wir ImageNet "freezen", sodass keine der weights und biases von ImageNet durch unseren Code neu trainiert werden. (Das würde den Sinn von transfer learning kaputt machen)
 feature_extractor.trainable = False   #Motto: "We only want to train the layers we add ourselves"
 
 #Definiere nun das tatsächliche model von uns selbst, das eben als eines seiner Layer das heruntergeladene "ImageNet" verwendet.
 model = tf.keras.Sequential([
-  feature_extractor,            #MobileNet (model das von Profis auf die Datenbank "ImageNet" trainiert wurde)
-  tf.keras.layers.Dense(10)               #Unser eigener fully connected layer, durch den es nur noch 2 labels gibt, die wir als Ergebnis erhalten können
+  feature_extractor,
+  tf.keras.layers.Dense(10)
 ])
 
 model.summary()

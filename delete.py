@@ -3,6 +3,23 @@ import numpy as np
 import tensorflow_datasets as tfds
 import gin
 
+
+######
+import os
+
+path = r"C:\\Users\Mari\PycharmProjects\experiments\models"
+os.chdir(path)
+files = sorted(os.listdir(os.getcwd()), key=os.path.getmtime)
+
+oldest = files[0]
+newest = files[-1]
+
+print("Oldest:", oldest)
+print("Newest:", newest)
+print("All by modified oldest to newest:", files)
+######
+
+
 tf.print(np.array([[1,5],[2,1]]))
 
 x=51,1

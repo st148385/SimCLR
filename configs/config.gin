@@ -22,7 +22,6 @@ gen_pipeline_train.use_random_flip = True
 gen_pipeline_train.x_size = 32 ###
 
 
-
 # Training parameters
 train.n_epochs=1
 train.learning_rate=0.001
