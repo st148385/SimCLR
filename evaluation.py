@@ -7,6 +7,9 @@ import tensorflow_datasets as tfds
 import tensorflow_hub as hub
 
 import logging
+
+from model import model_fn
+
 logger = tf.get_logger()
 logger.setLevel(logging.ERROR)
 
@@ -71,8 +74,9 @@ label_batch = label_batch.numpy()
 #
 # print("Nehme neuesten Checkpoint namens: ", newest)
 
-
-ckpt = tf.train.Checkpoint()
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+model = model_fn.gen_model()
+ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
 feature_extractor = ckpt.restore("C:\\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15\ckpts\ckpt-48")
 # ... make sure the variables are created
 feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
