@@ -31,13 +31,26 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     ckpt = tf.train.Checkpoint(net=representations, opt=optimizer)
-    feature_extractor = ckpt.restore(path_model_id)
+    #feature_extractor = ckpt.restore(path_model_id)
+
+#    inside_checkpoint = tf.train.list_variables(feature_extractor)
+    inside_checkpoint = tf.train.list_variables(   path_model_id   )
+
+    #print(inside_checkpoint)   #Gesamter Checkpoint
+
+    print("Menge der Elemente der Liste: ", len(inside_checkpoint), "und index 742 lautet: ", inside_checkpoint[742], "\n")
+
+    for k in range (700,761,1):         #742 hat shape (2048)
+        print(inside_checkpoint[k])
+
+    for index in range (0,742):
+        saver = tf.train.Saver(inside_checkpoint[index])
 
 
 
     #assertion error, falls es nicht geklappt hat
     #feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
-
+'''
     # Verwende jetzt nur h und nicht z
     h, z = feature_extractor
 
@@ -84,7 +97,7 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     plt.show()
 
 
-
+'''
 
 
 
