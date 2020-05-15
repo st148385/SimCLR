@@ -77,8 +77,8 @@ label_batch = label_batch.numpy()
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 model = model_fn.gen_model()
 ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
-feature_extractor = ckpt.restore("C:\\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15\ckpts\ckpt-48")
-# ... make sure the variables are created
+feature_extractor = ckpt.restore("C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-48")
+
 feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
 
 #feature_batch = feature_extractor(image_batch)

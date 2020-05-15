@@ -95,3 +95,50 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
 
     return dataset, info
 
+
+
+@gin.configurable
+def gen_pipeline_eval(ds_name='cifar10',
+                       tfds_path='~/tensorflow_datasets',
+
+                       size_batch=16,
+                       b_shuffle=True,
+                       size_buffer_cpu=5,
+                       shuffle_buffer_size=0,
+                       dataset_cache=False,
+                       num_parallel_calls=10):
+
+    # Load and prepare tensorflow dataset
+    (train_examples, validation_examples), info = tfds.load(
+                                                            ds_name,
+                                                            data_dir=tfds_path,
+                                                            with_info=True,
+                                                            as_supervised=True,
+                                                            split=['train', 'test']
+                                                            )
+
+    num_examples = info.splits['train'].num_examples
+    num_classes = info.features['label'].num_classes
+    gehtdas = info.splits['test'].num_examples
+
+    print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", gehtdas)
+
+    IMAGE_RES = 224
+
+    def format_image(image, label):  # format_image(image,label) formatiert nun also die Bilder und normalisiert direkt die Pixel-Werte
+        image = tf.image.resize(image, (IMAGE_RES, IMAGE_RES)) / 255.0
+        return image, label
+
+    BATCH_SIZE = 16
+
+    train_batches = train_examples.shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
+    validation_batches = validation_examples.map(format_image).batch(BATCH_SIZE).prefetch(1)
+
+    image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
+    image_batch = image_batch.numpy()
+    label_batch = label_batch.numpy()
+
+
+    return train_batches, validation_batches
+
+

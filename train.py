@@ -76,7 +76,9 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 #main()
 if __name__ == '__main__':
     device = '0'
-    path_model_id = 'C:\\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15\ckpts\ckpt-48.index'  # only to use if starting from existing model
+    #path_model_id = 'C:\\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15\ckpts\ckpt-48'  # only to use if starting from existing model
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'
+    #path_model_id='path_ckpts_train'
 
     # gin config files
     config_names = ['config.gin', 'architecture.gin']
