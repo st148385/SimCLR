@@ -19,14 +19,17 @@ logger.setLevel(logging.ERROR)
 
 #Lade das Datenset mit den Bildern herunter:
 (train_examples, validation_examples), info = tfds.load(
-    'tf_flowers',
+    'cifar10',
     with_info=True,
     as_supervised=True,
-    split=['train[:80%]', 'train[80%:]'],
-)
+    split=['train', 'test']
+    )
 
 num_examples = info.splits['train'].num_examples
 num_classes = info.features['label'].num_classes
+gehtdas = info.splits['test'].num_examples
+
+print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", gehtdas)
 
 #Man bemerkt im folgenden, dass diese Bilder nicht alle die selbe Größe aufweisen:
 for i, example_image in enumerate(train_examples.take(3)):
@@ -56,8 +59,7 @@ label_batch = label_batch.numpy()
 #Teil 3: Transfer Learning (also Verwendung von ImageNet mit unserem Udacity5-Datenset und eben nur 2 möglichen Outputs, bzw. logits: Cat oder Dog)
 
 URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/2"
-feature_extractor = hub.KerasLayer(URL,                                             #Wir nennen unseren MobileNet-Layer "feature_extractor", weil er im Grunde die ganze Arbeit für uns erledigt.
-                                   input_shape=(IMAGE_RES, IMAGE_RES,3))
+#feature_extractor = hub.KerasLayer(URL, input_shape=(IMAGE_RES, IMAGE_RES,3))
 
 #feature_batch = feature_extractor(image_batch)
 #print(feature_batch.shape, "(32 is the number of images and 1280 is the number of neurons in the last layer of the ""partial model"" of tensorflow hub)\n\n")
@@ -81,7 +83,7 @@ model.compile(
 
 #Trainieren unseres eigenen models, über das test-Dataset und validation-Dataset
 
-EPOCHS = 12
+EPOCHS = 1
 history = model.fit(train_batches,
                     epochs=EPOCHS,
                     validation_data=validation_batches)
