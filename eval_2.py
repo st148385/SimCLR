@@ -44,30 +44,38 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
         print(inside_checkpoint[k])
 
     for index in range (0,742):
-        saver = tf.train.Saver(inside_checkpoint[index])
-
-
+        encoder_h = tf.train.Checkpoint(inside_checkpoint[index])
 
     #assertion error, falls es nicht geklappt hat
     #feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
+
+    # TODO
+    # Ich erhalte mit inside_checkpoint = tf.train.list_variables(path_model_id) die gespeicherten Variablen als Liste(761 Elemente der Form('net/layer_with_weights-0/layer_with_weights-93/moving_variance/.ATTRIBUTES/VARIABLE_VALUE', [2048]))
+    #
+    # Dann wollte ich
+    # 1) herausfinden, wo der projection head beginnt und somit den projection head wegwerfen:
+    # for index in range(0, vor Anfang des projection heads):
+    #     encoder_h = tf.funktion(inside_checkpoint[index])
+    # 2) und was hierbei "tf.funktion" wäre
+
 '''
     # Verwende jetzt nur h und nicht z
     h, z = feature_extractor
 
 
-    #Training NUR mit h, wir werfen z ja weg.
+    # Training NUR mit h, wir werfen z ja weg.
     h.trainable = False
 
-    model = tf.keras.Sequential([h, tf.keras.layers.Dense(10) ])
+    model = tf.keras.Sequential([h, tf.keras.layers.Dense(10)])
 
     model.summary()
 
     model.compile(
-            optimizer='adam',
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            metrics=['accuracy'])
+        optimizer='adam',
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=['accuracy'])
 
-    #Trainieren unseres eigenen models, über das test-Dataset und validation-Dataset
+    # Trainieren unseres eigenen models, über das test-Dataset und validation-Dataset
 
     EPOCHS = 1
     history = model.fit(train_batches,

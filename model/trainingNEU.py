@@ -233,9 +233,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
         print(loss)
         #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
 
-        gradients = tape.gradient(loss, model.trainable_variables)          #error 08.05. || 18:12 Uhr  TODO
-        # ValueError: Cannot reshape a tensor with 128 elements to shape [32512] (32512 elements) for 'Reshape_16' (op:
-        # 'Reshape') with input shapes: [128], [1] and with input tensors computed as partial shapes: input[1] = [32512].
+        gradients = tape.gradient(loss, model.trainable_variables)
 
 
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
