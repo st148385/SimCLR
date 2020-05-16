@@ -5,7 +5,7 @@ from utils import utils_params, utils_misc, utils_devices
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
-
+from model import train_eval
 
 def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']):
 
@@ -24,27 +24,36 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     # evalutation pipeline:
     train_batches, validation_batches = input_fn.gen_pipeline_eval()
 
+    model=model_fn.gen_model()
+
+    restored_checkpoint = train_eval.train_eval(model=model, run_paths=run_paths)
+
+    print(restored_checkpoint)
+
+    # # Define model and load its Parameters from a checkpoint
+    # representations = model_fn.gen_model()
+    #
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    # ckpt = tf.train.Checkpoint(net=representations, opt=optimizer)
+    #
+    # feature_extractor = ckpt.restore(path_model_id)
 
 
-    # Define model and load its Parameters from a checkpoint
-    representations = model_fn.gen_model()
-
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    ckpt = tf.train.Checkpoint(net=representations, opt=optimizer)
-    #feature_extractor = ckpt.restore(path_model_id)
-
-#    inside_checkpoint = tf.train.list_variables(feature_extractor)
-    inside_checkpoint = tf.train.list_variables(   path_model_id   )
-
+    inside_checkpoint = tf.train.list_variables( path_model_id )
     #print(inside_checkpoint)   #Gesamter Checkpoint
+
 
     print("Menge der Elemente der Liste: ", len(inside_checkpoint), "und index 742 lautet: ", inside_checkpoint[742], "\n")
 
     for k in range (700,761,1):         #742 hat shape (2048)
         print(inside_checkpoint[k])
 
-    for index in range (0,742):
-        encoder_h = tf.train.Checkpoint(inside_checkpoint[index])
+
+    #encoder_h = tf.train.load_variable(inside_checkpoint[5:13], name='encoder_h')
+    #->TypeError: Expected binary or unicode string, got [('net/layer_with_weights-0/layer_with_weights-0/kernel/.OPTIMIZER_SLOT/opt/m/.ATTRIBUTES/VARIABLE_VALUE', [7, 7, 3, 64]), ('net/layer_with_weights-0/layer_with_weights-0/kernel/.OPTIMIZER_SLOT/opt/v/.ATTRIBUTES/VARIABLE_VALUE', [7, 7, 3, 64]), ('net/layer_with_weights-0/layer_with_weights-1/beta/.ATTRIBUTES/VARIABLE_VALUE', [64]), ('net/layer_with_weights-0/layer_with_weights-1/beta/.OPTIMIZER_SLOT/opt/m/.ATTRIBUTES/VARIABLE_VALUE', [64]), ('net/layer_with_weights-0/layer_with_weights-1/beta/.OPTIMIZER_SLOT/opt/v/.ATTRIBUTES/VARIABLE_VALUE', [64]), ('net/layer_with_weights-0/layer_with_weights-1/gamma/.ATTRIBUTES/VARIABLE_VALUE', [64]), ('net/layer_with_weights-0/layer_with_weights-1/gamma/.OPTIMIZER_SLOT/opt/m/.ATTRIBUTES/VARIABLE_VALUE', [64]), ('net/layer_with_weights-0/layer_with_weights-1/gamma/.OPTIMIZER_SLOT/opt/v/.ATTRIBUTES/VARIABLE_VALUE', [64])]
+
+    #for index in range (0,742):
+    #    encoder_h = tf.train.load_variable(inside_checkpoint[index], name=encoder_h)
 
     #assertion error, falls es nicht geklappt hat
     #feature_extractor.assert_consumed()  # lets you know if anything wasn't restored

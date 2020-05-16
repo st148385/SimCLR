@@ -29,3 +29,8 @@ train.n_epochs=1
 train.learning_rate=0.001
 train.save_period = 1
 
+#Evaluation parameters
+train_eval.n_epochs = 1
+train_eval.learning_rate = 0.001
+train_eval.save_period = 1
+

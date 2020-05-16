@@ -18,13 +18,15 @@ def gen_run_folder(path_model_id=''):
         run_paths['path_model_id'] = os.path.join(path_model_root, run_id)
     else:
         run_paths['path_model_id'] = path_model_id
-    run_paths['path_logs_train'] = os.path.join(run_paths['path_model_id'], 'logs', 'run.log')
+    run_paths['path_logs_train'] = os.path.join(run_paths['path_model_id'], 'logs', 'run.log')          # Also Ordner <path_model_id\\logs\\run.log
     #run_paths['path_logs_eval'] = os.path.join(run_paths['path_model_id'], 'logs', 'eval', 'run.log')
-    run_paths['path_graphs_train'] = os.path.join(run_paths['path_model_id'], 'graphs')
+    run_paths['path_graphs_train'] = os.path.join(run_paths['path_model_id'], 'graphs')                 # Also Ordner <path_model_id>\\graphs
     #run_paths['path_graphs_eval'] = os.path.join(run_paths['path_model_id'], 'graphs', 'eval')
     run_paths['path_ckpts_train'] = os.path.join(run_paths['path_model_id'], 'ckpts')
     #run_paths['path_ckpts_eval'] = os.path.join(run_paths['path_model_id'], 'ckpts', 'eval')
     run_paths['path_gin'] = os.path.join(run_paths['path_model_id'], 'config_operative.gin')
+
+    #Beispiel: run_paths['path_graphs_train'] bedeutet Ordner: <path_model_id>\\graphs ||bzw.|| C:\\Users\\Mari\\PycharmProjects\\experiments\\run_2020-05-14T19-00-15\\graphs
 
     # Create folders
     for k, v in run_paths.items():
