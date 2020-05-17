@@ -1,11 +1,12 @@
 import logging
-from model import input_fn, model_fn
-from model.trainingNEU import train
+from model import input_fn, model_fn, train_eval
 from utils import utils_params, utils_misc, utils_devices
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
-from model import train_eval
+import tensorflow_hub as hub
+
+
 
 def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']):
 
@@ -28,7 +29,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 
     restored_checkpoint = train_eval.train_eval(model=model, run_paths=run_paths)
 
-    print(restored_checkpoint)
+    #print(restored_checkpoint)  #<tensorflow.python.training.tracking.util.InitializationOnlyStatus object at 0x000001955A4E6CC8>
+
 
     # # Define model and load its Parameters from a checkpoint
     # representations = model_fn.gen_model()
@@ -39,14 +41,14 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     # feature_extractor = ckpt.restore(path_model_id)
 
 
-    inside_checkpoint = tf.train.list_variables( path_model_id )
+    #inside_checkpoint = tf.train.list_variables( path_model_id )
     #print(inside_checkpoint)   #Gesamter Checkpoint
 
 
-    print("Menge der Elemente der Liste: ", len(inside_checkpoint), "und index 742 lautet: ", inside_checkpoint[742], "\n")
+    #print("Menge der Elemente der Liste: ", len(inside_checkpoint), "und index 742 lautet: ", inside_checkpoint[742], "\n")
 
-    for k in range (700,761,1):         #742 hat shape (2048)
-        print(inside_checkpoint[k])
+    #for k in range (700,761,1):         #742 hat shape (2048)
+    #    print(inside_checkpoint[k])
 
 
     #encoder_h = tf.train.load_variable(inside_checkpoint[5:13], name='encoder_h')
@@ -67,17 +69,27 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     #     encoder_h = tf.funktion(inside_checkpoint[index])
     # 2) und was hierbei "tf.funktion" wäre
 
-'''
+
     # Verwende jetzt nur h und nicht z
-    h, z = feature_extractor
+    #h, z = feature_extractor
+
+    # Plausibilitätscheck
+    URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/2"
+    plausi = hub.KerasLayer(URL, input_shape=(224, 224, 3))
+
+    #TODO: restored_checkpoint (also model) -> KerasLayer
+    encoder_h=hub.KerasLayer(restored_checkpoint)
 
 
-    # Training NUR mit h, wir werfen z ja weg.
-    h.trainable = False
+    encoder_h.trainable = False
 
-    model = tf.keras.Sequential([h, tf.keras.layers.Dense(10)])
 
-    model.summary()
+    model = tf.keras.Sequential([
+         #encoder_h,
+         plausi,
+         tf.keras.layers.Dense(10)
+         ])
+
 
     model.compile(
         optimizer='adam',
@@ -90,6 +102,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     history = model.fit(train_batches,
                         epochs=EPOCHS,
                         validation_data=validation_batches)
+
+    model.summary()
 
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
@@ -114,15 +128,15 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     plt.show()
 
 
-'''
+
 
 
 
 #main()
 if __name__ == '__main__':
     device = '0'
-    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-55'  # only to use if starting from existing model
-    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'
+    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-55'  # only to use if starting from existing model
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'
 
     # gin config files
     config_names = ['config.gin', 'architecture.gin']

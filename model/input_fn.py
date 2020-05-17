@@ -114,14 +114,15 @@ def gen_pipeline_eval(ds_name='cifar10',
                                                             data_dir=tfds_path,
                                                             with_info=True,
                                                             as_supervised=True,
-                                                            split=['train', 'test']
+
+                                                            split=['train[:80%]', 'train[80%:]']
                                                             )
 
     num_examples = info.splits['train'].num_examples
     num_classes = info.features['label'].num_classes
-    gehtdas = info.splits['test'].num_examples
+    num_validation_examples = info.splits['test'].num_examples
 
-    print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", gehtdas)
+    print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", num_validation_examples)
 
     IMAGE_RES = 224
 

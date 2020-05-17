@@ -47,7 +47,7 @@ def get_negative_mask(batch_size):
         negative_mask[i, i + batch_size] = 0
     return tf.constant(negative_mask)
 
-@gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])
+@gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
 def train(model,
                    ds_train,
                    ds_train_info,
@@ -65,13 +65,13 @@ def train(model,
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
     ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
-    ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\
+    ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\ckpts
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
     ckpt.restore(ckpt_manager.latest_checkpoint)
 
     if ckpt_manager.latest_checkpoint:
         logging.info(f"Restored from {ckpt_manager.latest_checkpoint}.")
-        epoch_start = int(os.path.basename(ckpt_manager.latest_checkpoint).split('-')[1])+1
+        epoch_start = int(os.path.basename(ckpt_manager.latest_checkpoint).split('-')[1])+1 #starte bei [letzte_angefangene_epoch + 1]
     else:
         logging.info("Initializing from scratch.")
         epoch_start = 0
@@ -115,7 +115,8 @@ def train(model,
         # Saving checkpoints
         if epoch % save_period == 0:
             logging.info(f'Saving checkpoint to {run_paths["path_ckpts_train"]}.')  # <path_model_id>\\ckpts    ,z.B. C\\Users\\...\\run_datumTuhrzeit\\ckpts
-            ckpt_manager.save(checkpoint_number=epoch)
+            ckpt_manager.save(checkpoint_number=epoch)                              # bzw. beim ISS /misc/usrhomes/s1349/experiments/models/run_2020-05-16T09-23-51/ckpts
+
         # write config after everything has been established
         if epoch <= 0:
             gin_string = gin.operative_config_str()

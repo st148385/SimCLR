@@ -35,6 +35,8 @@ print(c,"\n")
 d = tf.constant( [ [[1.0, 2.0],[5,-1]], [[1,2],[5,-1]] ] )
 print( tf.math.l2_normalize(d, axis=1) )
 
+
+
 '''
 J1 = tf.ones( (128,1) )
 J2 = tf.ones( (128,1) )
@@ -58,7 +60,11 @@ assert len(meineliste) >= 1
 
 #
 #3) Was ist yaml? Siehe to_do in utils_misc
+'''
+#dict = {'note mathe':1,'note fach':2}
 
+#print(dict['note mathe'])
+'''
 
 #_fkt_name für private
 #dataset.map(funktion) führt funktion auf jedes einzelne element von dataset aus
