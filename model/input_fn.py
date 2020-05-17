@@ -115,7 +115,7 @@ def gen_pipeline_eval(ds_name='cifar10',
                                                             with_info=True,
                                                             as_supervised=True,
 
-                                                            split=['train[:80%]', 'train[80%:]']
+                                                            split=['train', 'test']
                                                             )
 
     num_examples = info.splits['train'].num_examples
@@ -126,11 +126,12 @@ def gen_pipeline_eval(ds_name='cifar10',
 
     IMAGE_RES = 224
 
-    def format_image(image, label):  # format_image(image,label) formatiert nun also die Bilder und normalisiert direkt die Pixel-Werte
+    # Auf IMAGE_RES formattieren und auf [0,1] normalisieren
+    def format_image(image, label):
         image = tf.image.resize(image, (IMAGE_RES, IMAGE_RES)) / 255.0
         return image, label
 
-    BATCH_SIZE = 16
+    BATCH_SIZE = 32
 
     train_batches = train_examples.shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
     validation_batches = validation_examples.map(format_image).batch(BATCH_SIZE).prefetch(1)

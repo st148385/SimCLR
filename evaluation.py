@@ -86,10 +86,30 @@ feature_extractor = hub.KerasLayer(URL,
 path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'
 run_paths = utils_params.gen_run_folder(path_model_id=path_model_id)
 
-model=model_fn.gen_model()
+###
+input_size=224
+neurons=128
+rn50 = tf.keras.applications.ResNet50(include_top=False, weights=None, input_tensor=None, input_shape=None)
+rn50.trainable = True
+
+# Layers
+# f(•)
+inputs = tf.keras.Input((input_size, input_size, 3))
+h_a = rn50(inputs, training=True)
+h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a)
+# g(•)
+z_a = tf.keras.layers.Dense(neurons)(h_a)
+z_a = tf.keras.layers.Activation("relu")(z_a)
+z_a = tf.keras.layers.Dense(neurons)(z_a)
+
+model = tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])
+###
+
 restored_checkpoint = train_eval(model=model, run_paths=run_paths)
-restored_checkpoint.trainable=False
+#restored_checkpoint.trainable=False
+
 h=hub.KerasLayer(restored_checkpoint)
+h.trainable=False
 #####
 
 
@@ -104,7 +124,7 @@ model = tf.keras.Sequential([
   tf.keras.layers.Dense(10)
 ])
 
-model.summary()
+#model.summary()
 
 model.compile(
   optimizer='adam',

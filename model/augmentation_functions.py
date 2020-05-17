@@ -47,17 +47,29 @@ def crop_and_resize(image, height, width):
   Returns:
     A `height` x `width` x channels Tensor holding a random crop of `image`.
   """
-    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])     #Also ist bbox ein Viereck mit (ymin,xmin,ymax,xmax)=(0,0,1,1)
     aspect_ratio = width / height
-    image = distorted_bounding_box_crop(
-        image,
-        bbox,
+
+    begin,size,bbox_for_draw = tf.image.sample_distorted_bounding_box(
+        image_size=tf.shape(image),
+        bounding_boxes=bbox,
         min_object_covered=0.1,
         aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),
-        area_range=(0.08, 1.0),
-        max_attempts=100,
-        scope=None)
-    return tf.compat.v1.image.resize_bicubic([image], [height, width])[0]
+        area_range=(0.08,1),
+        max_attempts=100
+    )
+    slice_of_image=tf.slice(image, begin, size)
+    return tf.image.resize(slice_of_image, size=(width,height), method='bicubic')
+
+    # image = distorted_bounding_box_crop(
+    #     image,
+    #     bbox,
+    #     min_object_covered=0.1,
+    #     aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),
+    #     area_range=(0.08, 1.0),
+    #     max_attempts=100,
+    #     scope=None)
+    # return tf.compat.v1.image.resize_bicubic([image], [height, width])[0]
 
 
 def random_crop_with_resize(image, height, width, p=1.0):

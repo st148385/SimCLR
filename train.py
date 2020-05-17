@@ -44,7 +44,8 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
 
 
-    im_size=32
+    im_size=224 #Vorübergehend zum Plotten
+    orig_im_size=219
     for image1, image2, label in ds_train.take(1):                                      #PrefetchDataset.take(N) nimmt also N image1-, image2- und label-Batches aus ds_train
             print("shape(image1):", np.shape(image1),  "\n\n\n")        #(128, im_size, im_size, 3)
             print("shape(image2):", np.shape(image2),  "\n\n\n")        #(128, im_size, im_size, 3)
@@ -57,8 +58,8 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
             # show(tf.reshape(image2[:1], (im_size, im_size, 3)), label='x_j_1 von Batch1')       #Auch erster Eintrag, aber versch. augmentiert -> x_j
             # show(tf.reshape(image2[1:2], (im_size, im_size, 3)), label='x_j_2 von batch1')      #x_j des zweiten Images von Batch1
             #
-            # show( tf.reshape( label[:1], (im_size,im_size,3) ) , label='Original x_1')          #Originale Version des ersten Eintrages der Batch -> x
-            # show(tf.reshape(label[1:2], (im_size, im_size, 3)), label='Original x_2')           #zweites Image von Batch1
+            # show( tf.reshape( label[:1], (orig_im_size,orig_im_size,3) ) , label='Original x_1')#Originale Version des ersten Eintrages der Batch -> x
+            # show(tf.reshape(label[1:2], (orig_im_size, orig_im_size, 3)), label='Original x_2') #zweites Image von Batch1
 
 
 

@@ -6,7 +6,7 @@ import gin
 @gin.configurable('resnetModel')
 def Architechture(input_size=224, n_filters_in=16, kernel_size=3, neurons=128):
 
-    rn50 = tf.keras.applications.ResNet50(include_top=False, weights='imagenet', input_tensor=None, input_shape=None)
+    rn50 = tf.keras.applications.ResNet50(include_top=False, weights=None, input_tensor=None, input_shape=None)
     rn50.trainable = True
 
     # Layers

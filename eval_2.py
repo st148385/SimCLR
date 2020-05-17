@@ -22,33 +22,26 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     # set device params
     utils_devices.set_devices(device)
 
-    # evalutation pipeline:
+    # evaluation pipeline:
     train_batches, validation_batches = input_fn.gen_pipeline_eval()
 
     model=model_fn.gen_model()
 
     restored_checkpoint = train_eval.train_eval(model=model, run_paths=run_paths)
 
-    #print(restored_checkpoint)  #<tensorflow.python.training.tracking.util.InitializationOnlyStatus object at 0x000001955A4E6CC8>
+    print(restored_checkpoint)
 
 
-    # # Define model and load its Parameters from a checkpoint
-    # representations = model_fn.gen_model()
+    ######inside_checkpoint liefert alle trainierten Variablen, WENN path_model_id dem Pfad bis einschließlich ckpt-55 entspricht:
     #
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    # ckpt = tf.train.Checkpoint(net=representations, opt=optimizer)
-    #
-    # feature_extractor = ckpt.restore(path_model_id)
+    # inside_checkpoint = tf.train.list_variables( path_model_id )
+    # print(inside_checkpoint)   #Gesamter Checkpoint
 
 
-    #inside_checkpoint = tf.train.list_variables( path_model_id )
-    #print(inside_checkpoint)   #Gesamter Checkpoint
+    # print("Menge der Elemente der Liste: ", len(inside_checkpoint), "und index 742 lautet: ", inside_checkpoint[742], "\n")
 
-
-    #print("Menge der Elemente der Liste: ", len(inside_checkpoint), "und index 742 lautet: ", inside_checkpoint[742], "\n")
-
-    #for k in range (700,761,1):         #742 hat shape (2048)
-    #    print(inside_checkpoint[k])
+    # for k in range (700,761,1):         #742 hat shape (2048)
+    #     print(inside_checkpoint[k])
 
 
     #encoder_h = tf.train.load_variable(inside_checkpoint[5:13], name='encoder_h')
@@ -57,8 +50,9 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     #for index in range (0,742):
     #    encoder_h = tf.train.load_variable(inside_checkpoint[index], name=encoder_h)
 
-    #assertion error, falls es nicht geklappt hat
+    #assertion error, falls es nicht geklappt hat:
     #feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
+    ######
 
     # TODO
     # Ich erhalte mit inside_checkpoint = tf.train.list_variables(path_model_id) die gespeicherten Variablen als Liste(761 Elemente der Form('net/layer_with_weights-0/layer_with_weights-93/moving_variance/.ATTRIBUTES/VARIABLE_VALUE', [2048]))
@@ -85,8 +79,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 
 
     model = tf.keras.Sequential([
-         #encoder_h,
-         plausi,
+         encoder_h,
+         #plausi,
          tf.keras.layers.Dense(10)
          ])
 
@@ -135,11 +129,11 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 #main()
 if __name__ == '__main__':
     device = '0'
-    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-55'  # only to use if starting from existing model
+    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-59'  # only to use if starting from existing model
     path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'
 
     # gin config files
-    config_names = ['config.gin', 'architecture.gin']
+    config_names = ['config_eval.gin', 'architecture.gin']
 
     # start training
     evaluation_train(path_model_id=path_model_id, device=device, config_names=config_names)
