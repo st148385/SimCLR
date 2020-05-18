@@ -98,11 +98,11 @@ inputs = tf.keras.Input((input_size, input_size, 3))
 h_a = rn50(inputs, training=True)
 h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a)
 # g(•)
-z_a = tf.keras.layers.Dense(neurons)(h_a)
-z_a = tf.keras.layers.Activation("relu")(z_a)
-z_a = tf.keras.layers.Dense(neurons)(z_a)
+#z_a = tf.keras.layers.Dense(neurons)(h_a)
+#z_a = tf.keras.layers.Activation("relu")(z_a)
+#z_a = tf.keras.layers.Dense(neurons)(z_a)
 
-model = tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])
+model = tf.keras.Model(inputs=inputs, outputs=[h_a])  # , z_a])
 ###
 
 restored_checkpoint = train_eval(model=model, run_paths=run_paths)
