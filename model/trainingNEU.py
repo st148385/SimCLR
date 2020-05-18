@@ -48,7 +48,7 @@ def get_negative_mask(batch_size):
     return tf.constant(negative_mask)
 
 @gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
-def train(model,
+def train(model, model_head,
                    ds_train,
                    ds_train_info,
                    run_paths,
@@ -62,9 +62,12 @@ def train(model,
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)
 
+
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
-    ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
+
+    # Checkpoint für h!
+    ckpt = tf.train.Checkpoint(net=model_head,opt=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\ckpts
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
     ckpt.restore(ckpt_manager.latest_checkpoint)
@@ -73,7 +76,20 @@ def train(model,
         logging.info(f"Restored from {ckpt_manager.latest_checkpoint}.")
         epoch_start = int(os.path.basename(ckpt_manager.latest_checkpoint).split('-')[1])+1 #starte bei [letzte_angefangene_epoch + 1]
     else:
-        logging.info("Initializing from scratch.")
+        logging.info("Initializing encoder_h from scratch.")
+        epoch_start = 0
+
+    # Checkpoint für z!
+    ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer)
+    ckpt_manager_head = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
+                                              max_to_keep=2, keep_checkpoint_every_n_hours=1)
+    ckpt.restore(ckpt_manager_head.latest_checkpoint)
+
+    if ckpt_manager_head.latest_checkpoint:
+        logging.info(f"Restored from {ckpt_manager_head.latest_checkpoint}.")
+        epoch_start = int(os.path.basename(ckpt_manager_head.latest_checkpoint).split('-')[1])+1 #starte bei [letzte_angefangene_epoch + 1]
+    else:
+        logging.info("Initializing projection_head from scratch.")
         epoch_start = 0
 
 
@@ -93,11 +109,14 @@ def train(model,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
-            train_step(model, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=128, tau=0.2)
+            train_step(model, model_head, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=128, tau=0.2)
 
         # Print summary
         if epoch <=0:
+            print("Summary des Encoders f(•):")
             model.summary()
+            print("Summary des Projection Head g(•)")
+            model_head.summary()
 
         # Fetch metrics
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: fetching metrics.")
@@ -117,7 +136,10 @@ def train(model,
             logging.info(f'Saving checkpoint to {run_paths["path_ckpts_train"]}.')  # <path_model_id>\\ckpts    ,z.B. C\\Users\\...\\run_datumTuhrzeit\\ckpts
             ckpt_manager.save(checkpoint_number=epoch)                              # bzw. beim ISS /misc/usrhomes/s1349/experiments/models/run_2020-05-16T09-23-51/ckpts
 
-        # write config after everything has been established
+        if epoch % save_period == 0:
+            logging.info(f'Saving checkpoint to {run_paths["path_ckpts_projectionhead"]}.')
+            ckpt_manager_head.save(checkpoint_number=epoch)
+            # write config after everything has been established
         if epoch <= 0:
             gin_string = gin.operative_config_str()
             logging.info(f'Fetched config parameters: {gin_string}.')
@@ -128,18 +150,16 @@ def train(model,
 #@gin.configurable
 
 @tf.function
-def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):
+def train_step(model, model_head, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
-
-    # Mask to remove positive examples from the batch of negative samples
-
 
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
-
-            h_i, z_i = model(image)  # train_step(model=gen_model_gesamt, image1=image1, image2=image2, optimizer=)
-            h_j, z_j = model(image2)  # 'gen_model_gesamt' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
+            h_i = model(image)          # 'gen_model_encoder' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
+            z_i = model_head(h_i)
+            h_j = model(image2)
+            z_j = model_head(h_j)
 
 
             #print("h_i:\n",h_i.shape)       #(128,128)
@@ -198,6 +218,7 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
 
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
+                # Mask to remove positive examples from the batch of negative samples
                 l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size) # alle elemente der diagnole vervwerfen
 
                 #print("l_neg:\n", l_neg.shape)          #(32512,)       #127*256=32512, bzw. 128*254=32512
@@ -231,13 +252,16 @@ def train_step(model, image, image2, optimizer, metric_loss_train, epoch_tf, bat
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
-        print(loss)
+        #print(loss)
         #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
 
-        gradients = tape.gradient(loss, model.trainable_variables)
+        gradients = tape.gradient(loss, [model.trainable_variables, model_head.trainable_variables])        #gradients ist jz liste mit 2 Elementen [0] und [1]
+        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
 
+        optimizer.apply_gradients(zip(gradients[1], model_head.trainable_variables))
 
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        #gradients = tape.gradient(loss, model_head.trainable_variables)
+        #optimizer.apply_gradients(zip(gradients, model_head.trainable_variables))
 
     # Update metrics
     metric_loss_train.update_state(loss)

@@ -2,7 +2,7 @@ import tensorflow as tf
 import gin
 
 
-
+#Gesamtes Model unter Verwendung von resnet-50
 @gin.configurable('resnetModel')
 def Architechture(input_size=224, n_filters_in=16, kernel_size=3, neurons=128):
 
@@ -22,3 +22,5 @@ def Architechture(input_size=224, n_filters_in=16, kernel_size=3, neurons=128):
     model=tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])
 
     return model
+
+

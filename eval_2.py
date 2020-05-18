@@ -25,9 +25,10 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     # evaluation pipeline:
     train_batches, validation_batches = input_fn.gen_pipeline_eval()
 
-    model=model_fn.gen_model()
+    model=model_fn.gen_encoderModel()
 
     restored_checkpoint = train_eval.train_eval(model=model, run_paths=run_paths)
+
 
     print(restored_checkpoint)
 
@@ -68,22 +69,36 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     #h, z = feature_extractor
 
     # Plausibilitätscheck
-    URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/2"
-    plausi = hub.KerasLayer(URL, input_shape=(224, 224, 3))
+    #URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/2"
+    #plausi = hub.KerasLayer(URL, input_shape=(224, 224, 3))
 
     #TODO: restored_checkpoint (also model) -> KerasLayer
     encoder_h=hub.KerasLayer(restored_checkpoint)
 
-
     encoder_h.trainable = False
+    '''
+    class myModel(tf.keras.Model):
+        def __init__(self, top_model):
+            super(myModel, self).__init__()
+            self.restored_model = top_model
+            self.restored_model.trainable=False
+            self.dense = tf.keras.layers.Dense(10)
+        def call(self, inputs):
+            output, _ = self.restored_model(input)
+            output = self.dense(output)
+            return output
 
-
+    mymodel = myModel(top_model=restored_checkpoint)
+    
+    for images, labels in train_batches:
+        h_batch, _ = mymodel(images)
+        break
+    '''
     model = tf.keras.Sequential([
          encoder_h,
          #plausi,
          tf.keras.layers.Dense(10)
          ])
-
 
     model.compile(
         optimizer='adam',
@@ -130,7 +145,7 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 if __name__ == '__main__':
     device = '0'
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-59'  # only to use if starting from existing model
-    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-18T13-13-41'
 
     # gin config files
     config_names = ['config_eval.gin', 'architecture.gin']

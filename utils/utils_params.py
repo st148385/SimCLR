@@ -23,6 +23,7 @@ def gen_run_folder(path_model_id=''):
     run_paths['path_graphs_train'] = os.path.join(run_paths['path_model_id'], 'graphs')                 # Also Ordner <path_model_id>\\graphs
     #run_paths['path_graphs_eval'] = os.path.join(run_paths['path_model_id'], 'graphs', 'eval')
     run_paths['path_ckpts_train'] = os.path.join(run_paths['path_model_id'], 'ckpts')
+    run_paths['path_ckpts_projectionhead'] = os.path.join(run_paths['path_model_id'], 'ckpts', 'projectionhead')
     #run_paths['path_ckpts_eval'] = os.path.join(run_paths['path_model_id'], 'ckpts', 'eval')
     run_paths['path_gin'] = os.path.join(run_paths['path_model_id'], 'config_operative.gin')
 
