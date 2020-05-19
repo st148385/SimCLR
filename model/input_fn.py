@@ -99,14 +99,14 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
 
 @gin.configurable
 def gen_pipeline_eval(ds_name='cifar10',
-                       tfds_path='~/tensorflow_datasets',
-
-                       size_batch=16,
-                       b_shuffle=True,
-                       size_buffer_cpu=5,
-                       shuffle_buffer_size=0,
-                       dataset_cache=False,
-                       num_parallel_calls=10):
+                      tfds_path='~/tensorflow_datasets',
+                      RESIZE_TO_RES=224,
+                      BATCH_SIZE=32,
+                      b_shuffle=True,
+                      size_buffer_cpu=5,
+                      shuffle_buffer_size=0,
+                      dataset_cache=False,
+                      num_parallel_calls=10):
 
     # Load and prepare tensorflow dataset
     (train_examples, validation_examples), info = tfds.load(
@@ -124,17 +124,20 @@ def gen_pipeline_eval(ds_name='cifar10',
 
     print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", num_validation_examples)
 
-    IMAGE_RES = 224
 
     # Auf IMAGE_RES formattieren und auf [0,1] normalisieren
     def format_image(image, label):
-        image = tf.image.resize(image, (IMAGE_RES, IMAGE_RES)) / 255.0
+        image = tf.image.resize(image, (RESIZE_TO_RES, RESIZE_TO_RES)) / 255.0
         return image, label
 
-    BATCH_SIZE = 32
 
-    train_batches = train_examples.shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
-    validation_batches = validation_examples.map(format_image).batch(BATCH_SIZE).prefetch(1)
+    # 2020-05-19 11:48:18.724911: W tensorflow/core/kernels/data/cache_dataset_ops.cc:822] The calling iterator did not fully read the dataset being cached.
+    # In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset will be discarded.
+    # This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
+
+
+    train_batches = train_examples.cache().shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
+    validation_batches = validation_examples.cache().map(format_image).batch(BATCH_SIZE).prefetch(1)
 
     image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
     image_batch = image_batch.numpy()

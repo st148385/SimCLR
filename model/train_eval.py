@@ -2,17 +2,64 @@ import os
 import logging
 import tensorflow as tf
 import tensorflow.keras as ks
+import matplotlib.pyplot as plt
 import gin
 import sys
 from utils import utils_params
 
 
+@gin.configurable #(whitelist=[eval_epochs])
+def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2):
+    model = tf.keras.Sequential([
+         model_before_dense,
+         tf.keras.layers.Dense(10)
+         ])
+
+    model.compile(
+        optimizer='adam',
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=['accuracy'])
+
+    # Training
+
+    #eval_epochs = 1
+    history = model.fit(train_batches,
+                        epochs=eval_epochs,
+                        validation_data=validation_batches)
+
+    model.summary()
+
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs_range = range(eval_epochs)
+
+    plt.figure(figsize=(8, 8))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Training Accuracy')
+    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Training Loss')
+    plt.plot(epochs_range, val_loss, label='Validation Loss')
+    plt.legend(loc='upper right')
+    plt.title('Training and Validation Loss')
+    plt.show()
+
+
+
+
 #@gin.configurable(blacklist=['model', 'run_paths'])
-def train_eval(model,
-                   run_paths,
-                   n_epochs=1,
-                   learning_rate=0.001,
-                   save_period=1):
+def load_checkpoint_weights(model,
+                            run_paths,
+                            n_epochs=1,
+                            learning_rate=0.001,
+                            save_period=1):
     # Generate summary writer
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")
@@ -26,6 +73,7 @@ def train_eval(model,
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'], #C:\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15['path_ckpts_train']
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
     ckpt.restore(ckpt_manager.latest_checkpoint)  #Nimmt sich wohl [model_checkpoint_path: "ckpt-55"] aus dem Ordner
+
 
     if ckpt_manager.latest_checkpoint:
         print("Restored from {}".format(ckpt_manager.latest_checkpoint))

@@ -10,15 +10,13 @@ ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Ma
 tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
                                             #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
                                             #Wie Alex oben geschrieben hat, muss ich "\\" (Windows) für Linux (ISS GPUs) auf "/" ändern.
-gen_pipeline_train.ds_name = %ds_name
-gen_pipeline_train.tfds_path = %tfds_path
-gen_pipeline_train.size_batch = 128
-gen_pipeline_train.b_shuffle = True
-gen_pipeline_train.dataset_cache = False
-gen_pipeline_train.size_buffer_cpu = 2
-gen_pipeline_train.shuffle_buffer_size = 50000
-gen_pipeline_train.num_parallel_calls = %num_cpu_threads
-gen_pipeline_train.use_random_flip = True
-gen_pipeline_train.x_size = 32 ###
 
 
+gen_pipeline_eval.ds_name = %ds_name
+gen_pipeline_eval.tfds_path = %tfds_path
+gen_pipeline_eval.BATCH_SIZE = 32
+gen_pipeline_eval.RESIZE_TO_RES = 224
+
+n_eval_epochs = 6
+
+train_evaluation_network_and_plot_result.eval_epochs = %n_eval_epochs    # n_epochs vom Training des evaluation network
