@@ -10,6 +10,7 @@ ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Ma
 tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
                                             #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
                                             #Wie Alex oben geschrieben hat, muss ich "\\" (Windows) für Linux (ISS GPUs) auf "/" ändern.
+
 size_batch = 128
 image_size_dataset = 32     #Nach Augmentation haben x_i und x_j Auflösung: (image_size_dataset x image_size_dataset x 3)
 
@@ -29,4 +30,4 @@ train.n_epochs=2
 train.learning_rate=0.001
 train.save_period = 1
 train.tau = 0.5
-train.size_batch = %image_size_batch
+train.size_batch = %size_batch

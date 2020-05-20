@@ -63,7 +63,7 @@ def train(model, model_head,
 
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)
-
+    optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate)
 
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
@@ -83,7 +83,7 @@ def train(model, model_head,
 
     # Checkpoint für z!
     ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer)
-    ckpt_manager_head = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
+    ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
     ckpt.restore(ckpt_manager_head.latest_checkpoint)
 
@@ -111,7 +111,7 @@ def train(model, model_head,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
-            train_step(model, model_head, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=size_batch, tau=tau)
+            train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train,epoch_tf, batch_size=size_batch, tau=tau)
 
         # Print summary
         if epoch <=0:
@@ -152,7 +152,7 @@ def train(model, model_head,
 
 
 @tf.function
-def train_step(model, model_head, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):
+def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, batch_size, tau):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
 
@@ -258,9 +258,9 @@ def train_step(model, model_head, image, image2, optimizer, metric_loss_train, e
         #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
 
         gradients = tape.gradient(loss, [model.trainable_variables, model_head.trainable_variables])        #gradients ist jz liste mit 2 Elementen [0] und [1]
-        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
 
-        optimizer.apply_gradients(zip(gradients[1], model_head.trainable_variables))
+        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
+        optimizer_head.apply_gradients(zip(gradients[1], model_head.trainable_variables))
 
         #gradients = tape.gradient(loss, model_head.trainable_variables)
         #optimizer.apply_gradients(zip(gradients, model_head.trainable_variables))
