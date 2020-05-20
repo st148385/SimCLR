@@ -29,4 +29,4 @@ train.n_epochs=2
 train.learning_rate=0.001
 train.save_period = 1
 train.tau = 0.5
-train.size_batch = %size_batch
+train.size_batch = %image_size_batch
