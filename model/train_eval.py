@@ -10,25 +10,29 @@ from utils import utils_params
 
 @gin.configurable #(whitelist=[eval_epochs])
 def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2):
+    #Freeze pre-trained encoder h(•)
+    model_before_dense.trainable = False
+
+    #Build eval_model
     model = tf.keras.Sequential([
          model_before_dense,
          tf.keras.layers.Dense(10)
          ])
 
+    #Set opt, loss, metrics
     model.compile(
         optimizer='adam',
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=['accuracy'])
 
-    # Training
-
-    #eval_epochs = 1
+    #Training
     history = model.fit(train_batches,
                         epochs=eval_epochs,
                         validation_data=validation_batches)
 
     model.summary()
 
+    #Plot result
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
 
@@ -57,9 +61,7 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
 #@gin.configurable(blacklist=['model', 'run_paths'])
 def load_checkpoint_weights(model,
                             run_paths,
-                            n_epochs=1,
-                            learning_rate=0.001,
-                            save_period=1):
+                            learning_rate=0.001):
     # Generate summary writer
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")

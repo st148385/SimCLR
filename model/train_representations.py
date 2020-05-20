@@ -54,7 +54,9 @@ def train(model, model_head,
                    run_paths,
                    n_epochs=10,
                    learning_rate=0.001,
-                   save_period=1):
+                   save_period=1,
+                   size_batch=128,
+                   tau=0.5):
     # Generate summary writer
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))   # <path_model_id>\\logs\\run.log
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")  # <path_model_id>\\logs\\run.log
@@ -109,7 +111,7 @@ def train(model, model_head,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
-            train_step(model, model_head, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=128, tau=0.2)
+            train_step(model, model_head, image, image2, optimizer, metric_loss_train,epoch_tf, batch_size=size_batch, tau=tau)
 
         # Print summary
         if epoch <=0:
@@ -147,7 +149,7 @@ def train(model, model_head,
 
     return 0
 
-#@gin.configurable
+
 
 @tf.function
 def train_step(model, model_head, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):

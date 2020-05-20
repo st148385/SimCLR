@@ -42,7 +42,7 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     print(encoder_h)        #<tensorflow_hub.keras_layer.KerasLayer object at 0x000001106F4D5EC8>
 
 
-    encoder_h.trainable = False
+
 
     train_eval.train_evaluation_network_and_plot_result(model_before_dense=encoder_h, train_batches=train_batches, validation_batches=validation_batches)
 
@@ -120,7 +120,9 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 if __name__ == '__main__':
     device = '0'
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-59'  # only to use if starting from existing model
-    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-18T15-13-02'
+
+    #Bestes Resultat mit: path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
 
     # gin config files
     config_names = ['config_eval.gin', 'architecture.gin']

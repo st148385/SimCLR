@@ -17,7 +17,6 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
                        size_buffer_cpu=5,
                        shuffle_buffer_size=0,
                        dataset_cache=False,
-                       use_random_flip=True,
                        num_parallel_calls=10,
                        x_size=32
                        ):

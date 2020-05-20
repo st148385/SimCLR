@@ -56,7 +56,7 @@ def crop_and_resize(image, height, width):
         min_object_covered=0.1,
         aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),
         area_range=(0.08,1),
-        max_attempts=100
+        max_attempts=100    #Nach 100 tries einfach das Originalbild beibehalten
     )
     slice_of_image=tf.slice(image, begin, size)
     return tf.image.resize(slice_of_image, size=(width,height), method='bicubic')
