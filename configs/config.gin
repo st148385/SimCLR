@@ -29,5 +29,6 @@ gen_pipeline_train.x_size = %ds_name_image_size
 train.n_epochs=1
 train.learning_rate=0.001
 train.save_period = 1
+train.size_batch = %size_batch
 train.tau = 0.5
 train.use_2optimizers = True
