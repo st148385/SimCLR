@@ -56,7 +56,8 @@ def train(model, model_head,
                    learning_rate=0.001,
                    save_period=1,
                    size_batch=128,
-                   tau=0.5):
+                   tau=0.5,
+                   use_2optimizers=False):
     # Generate summary writer
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))   # <path_model_id>\\logs\\run.log
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")  # <path_model_id>\\logs\\run.log
@@ -111,7 +112,7 @@ def train(model, model_head,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
-            train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train,epoch_tf, batch_size=size_batch, tau=tau)
+            train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train,epoch_tf, use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau)
 
         # Print summary
         if epoch <=0:
@@ -152,7 +153,7 @@ def train(model, model_head,
 
 
 @tf.function
-def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, batch_size, tau):
+def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
 
@@ -258,8 +259,12 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
         gradients = tape.gradient(loss, [model.trainable_variables, model_head.trainable_variables])        #gradients ist jz liste mit 2 Elementen [0] und [1]
 
-        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
-        optimizer_head.apply_gradients(zip(gradients[1], model_head.trainable_variables))
+        if use_2optimizers == True:
+            optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
+            optimizer_head.apply_gradients(zip(gradients[1], model_head.trainable_variables))
+        else:
+            optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
+            optimizer.apply_gradients(zip(gradients[1], model_head.trainable_variables))
 
         #gradients = tape.gradient(loss, model_head.trainable_variables)
         #optimizer.apply_gradients(zip(gradients, model_head.trainable_variables))
