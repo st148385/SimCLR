@@ -69,7 +69,7 @@ def train(model, model_head,
     # manager automatically handles model reloading if directory contains ckpts
 
     # Checkpoint für h!
-    ckpt = tf.train.Checkpoint(net=model_head,opt=optimizer)
+    ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\ckpts
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
     ckpt.restore(ckpt_manager.latest_checkpoint)
@@ -82,7 +82,7 @@ def train(model, model_head,
         epoch_start = 0
 
     # Checkpoint für z!
-    ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer)
+    ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer_head)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
     ckpt.restore(ckpt_manager_head.latest_checkpoint)
@@ -248,9 +248,8 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
 
-                #print("loss:\n", loss.shape)   #()
+                #print("loss:\n", loss.shape)   #()   ->Skalar
 
-                ###Shape: loss=()   (loss soll ein Skalar sein und ist hier auch ein Skalar)
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
