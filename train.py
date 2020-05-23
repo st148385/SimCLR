@@ -67,10 +67,11 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     #model = model_fn.gen_Model()
     encoder_f = model_fn.gen_encoderModel()
     projectionhead_g = model_fn.gen_headModel()
-    #model.summary()
+    gesamtmodel_f_g = model_fn.gen_model()
 
     train(encoder_f,
           projectionhead_g,
+          gesamtmodel_f_g,
           ds_train,
           ds_train_info,
           run_paths)
