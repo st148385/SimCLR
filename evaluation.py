@@ -33,13 +33,13 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     #restored_model.assert_consumed()  # lets you know if anything wasn't restored
 
 
-    print(restored_model)   #<tensorflow.python.keras.engine.training.Model object at 0x00000193D7565388>
+    print("restored_model:\n", restored_model)   #<tensorflow.python.keras.engine.training.Model object at 0x00000193D7565388>
 
 
     encoder_h = hub.KerasLayer(restored_model)
 
 
-    print(encoder_h)        #<tensorflow_hub.keras_layer.KerasLayer object at 0x000001106F4D5EC8>
+    print("model after model=kerasLayer(model):\n", encoder_h)        #<tensorflow_hub.keras_layer.KerasLayer object at 0x000001106F4D5EC8>
 
 
 
@@ -119,7 +119,7 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 #main()
 if __name__ == '__main__':
     device = '0'
-    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-59'  # only to use if starting from existing model
+    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-59'  #Für tf.train.list_variables( path_model_id )
     path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-18T15-13-02'
 
     #Bestes Resultat mit: path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
