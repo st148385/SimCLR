@@ -23,7 +23,7 @@ gen_pipeline_train.size_buffer_cpu = 2
 gen_pipeline_train.shuffle_buffer_size = 50000
 gen_pipeline_train.num_parallel_calls = %num_cpu_threads
 gen_pipeline_train.x_size = %ds_name_image_size
-
+plot_dataset.dataset_name = %ds_name
 
 # Training parameters
 train.n_epochs=1

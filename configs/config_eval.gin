@@ -17,6 +17,6 @@ gen_pipeline_eval.tfds_path = %tfds_path
 gen_pipeline_eval.BATCH_SIZE = 32
 gen_pipeline_eval.RESIZE_TO_RES = 224   #224 für resnet-50      #resize() elemente des evaluation datasets auf (resize_to_res x resize_to_res)
 
-n_eval_epochs = 12
+n_eval_epochs = 1
 
 train_evaluation_network_and_plot_result.eval_epochs = %n_eval_epochs    # n_epochs vom Training des evaluation network

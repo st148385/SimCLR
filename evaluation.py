@@ -69,7 +69,6 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     #feature_extractor.assert_consumed()  # lets you know if anything wasn't restored
     ######
 
-    # TODO
     # Ich erhalte mit inside_checkpoint = tf.train.list_variables(path_model_id) die gespeicherten Variablen als Liste(761 Elemente der Form('net/layer_with_weights-0/layer_with_weights-93/moving_variance/.ATTRIBUTES/VARIABLE_VALUE', [2048]))
     #
     # Dann wollte ich

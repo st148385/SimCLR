@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ##########
+from utils.utils_misc import plot_dataset
+
+
 def show(image, label):
     plt.figure()
     plt.imshow(image)
@@ -61,6 +64,8 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
             # show( tf.reshape( label[:1], (orig_im_size,orig_im_size,3) ) , label='Original x_1')#Originale Version des ersten Eintrages der Batch -> x
             # show(tf.reshape(label[1:2], (orig_im_size, orig_im_size, 3)), label='Original x_2') #zweites Image von Batch1
 
+
+    #utils_misc.plot_dataset(ds_train.take(1))   #Plottet jetzt das Original, sowie beide augmentierten Versionen dieses Originals
 
 
     # Define model

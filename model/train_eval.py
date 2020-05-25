@@ -2,7 +2,6 @@ import os
 import logging
 import tensorflow as tf
 import tensorflow.keras as ks
-import matplotlib.pyplot as plt
 import gin
 import sys
 from utils import utils_params
@@ -41,6 +40,10 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
 
     epochs_range = range(eval_epochs)
 
+    import matplotlib
+    matplotlib.use('TkAgg')  # qt may not work on server
+    from matplotlib import pyplot as plt
+
     plt.figure(figsize=(8, 8))
     plt.subplot(1, 2, 1)
     plt.plot(epochs_range, acc, label='Training Accuracy')
@@ -53,6 +56,7 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
+    plt.savefig('E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\')
     plt.show()
 
 
