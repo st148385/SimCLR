@@ -5,7 +5,7 @@ import tensorflow.keras as ks
 import gin
 import sys
 from utils import utils_params
-
+import matplotlib.pyplot as plt
 
 @gin.configurable #(whitelist=[eval_epochs])
 def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2,
@@ -40,10 +40,6 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
     val_loss = history.history['val_loss']
 
     epochs_range = range(eval_epochs)
-
-    import matplotlib
-    matplotlib.use('TkAgg')  # qt may not work on server
-    from matplotlib import pyplot as plt
 
     plt.figure(figsize=(8, 8))
     plt.subplot(1, 2, 1)
