@@ -1,7 +1,13 @@
+import matplotlib
+matplotlib.use('TkAgg')  # qt may not work on server
+from matplotlib import pyplot as plt
+
+
 import logging
 
 import gin
 import tensorflow as tf
+
 
 
 def set_loggers(path_log=None, logging_level=0, b_stream=True, b_debug=False):
@@ -37,10 +43,8 @@ def set_loggers(path_log=None, logging_level=0, b_stream=True, b_debug=False):
 
 @gin.configurable()
 def plot_dataset(ds, dataset_name=' '):
-        """Takes ds.take(N) and plots N instances of augmented_image_A, augmented_image_B, original_Image"""
-        import matplotlib
-        matplotlib.use('TkAgg')  # qt may not work on server
-        from matplotlib import pyplot as plt
+        """Takes ds.take(N) and plots 3*N images. To be exact, it's N instances of augmented_image_A, augmented_image_B, original_Image"""
+
         for images, images2, labels in ds:
             plt.figure()
             plt.imshow(images[0])

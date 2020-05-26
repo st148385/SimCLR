@@ -8,14 +8,15 @@ from utils import utils_params
 
 
 @gin.configurable #(whitelist=[eval_epochs])
-def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2):
+def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2,
+                                             dataset_num_classes=10, plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname'):
     #Freeze pre-trained encoder h(•)
     model_before_dense.trainable = False
 
     #Build eval_model
     model = tf.keras.Sequential([
          model_before_dense,
-         tf.keras.layers.Dense(10)
+         tf.keras.layers.Dense(dataset_num_classes)
          ])
 
     #Set opt, loss, metrics
@@ -56,7 +57,7 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
-    plt.savefig('E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\')
+    plt.savefig(plot_folder)
     plt.show()
 
 

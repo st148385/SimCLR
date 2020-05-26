@@ -1,21 +1,23 @@
 # Network architecture
+input_size = 224 ###
+MLP_dense_in = 512
+MLP_dense_out = 128     # 128 nach SimCLR paper
+
+
 gen_model.Architecture = @resnetModel
-gen_model.input_size = 224  ###
-gen_model.n_filters_in = 32
-gen_model.kernel_size = 3
-gen_model.neurons = 128
+gen_model.input_size = %input_size
+gen_model.mlp_dense1 = %MLP_dense_in
+gen_model.mlp_dense2 = 128
 
 
 # Network architecture
 gen_encoderModel.Architecture_encoder = @encoderModel
-gen_encoderModel.input_size = 224  ###
-gen_encoderModel.n_filters_in = 32
-gen_encoderModel.kernel_size = 3
-gen_encoderModel.neurons = 128
+gen_model.input_size = %input_size
+gen_model.mlp_dense1 = %MLP_dense_in
+gen_model.mlp_dense2 = %MLP_dense_out
 
 # Network architecture
 gen_headModel.Architecture_head = @headModel
-gen_headModel.input_size = 224  ###
-gen_headModel.n_filters_in = 32
-gen_headModel.kernel_size = 3
-gen_headModel.neurons = 128
+gen_model.input_size = %input_size
+gen_model.mlp_dense1 = %MLP_dense_in
+gen_model.mlp_dense2 = %MLP_dense_out

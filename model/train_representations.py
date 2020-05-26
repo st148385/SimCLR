@@ -59,6 +59,7 @@ def train(model, model_head, model_gesamt,
                    tau=0.5,
                    use_2optimizers=True,
                    use_split_model=True):
+    '''Pass both parts of split model and the overall model (all 3 models), we can use the parameter "use_split_model"!'''
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
         model = model_gesamt

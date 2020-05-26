@@ -12,7 +12,7 @@ tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on 
                                             #Wie Alex oben geschrieben hat, muss ich "\\" (Windows) für Linux (ISS GPUs) auf "/" ändern.
 
 size_batch = 128
-ds_name_image_size = 32     #Nach Augmentation haben x_i und x_j Auflösung: (image_size_dataset x image_size_dataset x 3)
+dataset_image_size = 32     #Nach Augmentation haben x_i und x_j Auflösung: (image_size_dataset x image_size_dataset x 3)
 
 gen_pipeline_train.ds_name = %ds_name
 gen_pipeline_train.tfds_path = %tfds_path
@@ -22,7 +22,7 @@ gen_pipeline_train.dataset_cache = False
 gen_pipeline_train.size_buffer_cpu = 2
 gen_pipeline_train.shuffle_buffer_size = 50000
 gen_pipeline_train.num_parallel_calls = %num_cpu_threads
-gen_pipeline_train.x_size = %ds_name_image_size
+gen_pipeline_train.x_size = %dataset_image_size
 plot_dataset.dataset_name = %ds_name
 
 # Training parameters
