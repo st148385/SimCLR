@@ -58,12 +58,3 @@ def plot_dataset(ds, dataset_name=' '):
             plt.imshow(labels[0])
             plt.title("Original {} Image".format(dataset_name))
             plt.show()
-
-# def plot_dataset(ds):
-#     import matplotlib
-#     matplotlib.use('TkAgg')  # qt may not work on server
-#     from matplotlib import pyplot as plt
-#     for images, labels in ds:
-#         plt.figure()
-#         plt.imshow(images[0])
-#         plt.show()

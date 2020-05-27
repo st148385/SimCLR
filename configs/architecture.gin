@@ -7,7 +7,7 @@ MLP_dense_out = 128     # 128 nach SimCLR paper
 gen_model.Architecture = @resnetModel
 gen_model.input_size = %input_size
 gen_model.mlp_dense1 = %MLP_dense_in
-gen_model.mlp_dense2 = 128
+gen_model.mlp_dense2 = %MLP_dense_out
 
 
 # Network architecture
