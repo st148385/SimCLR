@@ -1,3 +1,4 @@
+import datetime
 import os
 import logging
 import tensorflow as tf
@@ -9,7 +10,7 @@ import matplotlib.pyplot as plt
 
 @gin.configurable #(whitelist=[eval_epochs])
 def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2,
-                                             dataset_num_classes=10, plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname'):
+                                             dataset_num_classes=10, plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
     #Freeze pre-trained encoder h(•)
     model_before_dense.trainable = False
 
@@ -25,10 +26,15 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         metrics=['accuracy'])
 
+    #Tensorboard
+    log_dir = os.path.dirname(run_paths['path_logs_train']) + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+
     #Training
     history = model.fit(train_batches,
                         epochs=eval_epochs,
-                        validation_data=validation_batches)
+                        validation_data=validation_batches,
+                        callbacks=[tensorboard_callback])
 
     model.summary()
 
@@ -64,8 +70,8 @@ def load_checkpoint_weights(model,
                             run_paths,
                             learning_rate=0.001):
     # Generate summary writer
-    writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
-    logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")
+    #writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
+    #logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")
 
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)

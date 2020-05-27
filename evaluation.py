@@ -44,7 +44,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 
 
 
-    train_eval.train_evaluation_network_and_plot_result(model_before_dense=encoder_h, train_batches=train_batches, validation_batches=validation_batches)
+    train_eval.train_evaluation_network_and_plot_result(model_before_dense=encoder_h, train_batches=train_batches,
+                                                        validation_batches=validation_batches, run_paths=run_paths)
 
 
     ######inside_checkpoint liefert alle trainierten Variablen, WENN path_model_id dem Pfad bis einschließlich ckpt-55 entspricht:
