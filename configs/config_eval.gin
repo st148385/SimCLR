@@ -8,9 +8,7 @@ set_devices.soft_device_placement = False
 # Input Pipeline
 ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
 ds_num_classes = 10
-tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
-                                            #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
-                                            #Wie Alex oben geschrieben hat, muss ich "\\" (Windows) für Linux (ISS GPUs) auf "/" ändern.
+tfds_path = '~\\tensorflow_datasets'        # /data/public/tensorflow_datasets
 
 
 gen_pipeline_eval.ds_name = %ds_name
