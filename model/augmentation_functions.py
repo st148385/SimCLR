@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import cv2
+from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
 #############################################################################################
 # Funktionen
@@ -50,12 +51,12 @@ def crop_and_resize(image, height, width):
     bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])     #Also ist bbox ein Viereck mit (ymin,xmin,ymax,xmax)=(0,0,1,1)
     aspect_ratio = width / height
 
-    begin,size,bbox_for_draw = tf.image.sample_distorted_bounding_box(
+    begin,size,bbox_for_draw = sample_distorted_bounding_box_v2(
         image_size=tf.shape(image),
         bounding_boxes=bbox,
-        min_object_covered=0.1,
-        aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),
-        area_range=(0.08,1),
+        min_object_covered=0.1,     #Mindestens N% des Originalbilds müssen sich in der cropped version wiederfinden lassen
+        aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),     #cropped area hat shape im Bereich [0.75*width/height, 1.333*width/height]
+        area_range=(0.08,1),    #cropped area muss in diesem Bereich des Originalbilds liegen (Werte von SimCLR-Github, obwohl nur >0.1 als untere Grenze Sinn macht?)
         max_attempts=100    #Nach 100 tries einfach das Originalbild beibehalten
     )
     slice_of_image=tf.slice(image, begin, size)
@@ -103,24 +104,27 @@ class GaussianBlur(object):
     def __call__(self, sample):
         sample = np.array(sample)
 
-        # blur the image with a 50% chance
-        prob = np.random.random_sample()
+        # 50% chance to blur image
+        prob = np.random.random_sample()    # prob = [0,1)
 
         if prob < 0.5:
-            sigma = (self.max - self.min) * np.random.random_sample() + self.min
-            sample = cv2.GaussianBlur(sample, (self.kernel_size, self.kernel_size), sigma)
-
+            sigma = (self.max - self.min) * np.random.random_sample() + self.min    #(max-min)*0+min ... (max-min)*1+min -> Intervall: sigma = [min, max)
+            sample = cv2.GaussianBlur(sample, (self.kernel_size, self.kernel_size), sigma)  #Verwendete Argumente: src, ksize, sigmaX
+            # src=sample:   input image
+            # ksize:        Gaussian Kernel Size [height, width]. height and width SHOULD BE ODD and can have different values.
+            # sigmaX=sigma: Kernel standard deviation along X-axis (horizontal direction).
+            # sigmaY:       If only sigmaX is specified, sigmaY is taken as equal to sigmaX. (so this happens if simgaY=None (which is the default))
         return sample
 
 
-def gaussian_filter(v1, v2):
-    k_size = int(v1.shape[1] * 0.1)  # kernel size is set to be 10% of the image height/width
+def gaussian_filter(img1, img2):    #images with same "image.shape[1]"
+    k_size = int(img1.shape[1] * 0.1)  # kernel size is set to be 10% of the image height/width AND SHOULD BE ODD (see func "cv2.GaussianBlur")
     gaussian_ope = GaussianBlur(kernel_size=k_size, min=0.1, max=2.0)
-    [v1, ] = tf.py_function(gaussian_ope, [v1], [tf.float32])
-    [v2, ] = tf.py_function(gaussian_ope, [v2], [tf.float32])
-    return v1, v2
+    [img1, ] = tf.py_function(gaussian_ope, [img1], [tf.float32])   #tf.py_function(function_to_use, input for function_to_use,
+    [img2, ] = tf.py_function(gaussian_ope, [img2], [tf.float32])   #               tensorflow_datatype indicating what function_to_use returns)
+    return img1, img2
 
-
+'''
 def distorted_bounding_box_crop(image,
                                 bbox,
                                 min_object_covered=0.1,
@@ -170,4 +174,4 @@ def distorted_bounding_box_crop(image,
         image = tf.image.crop_to_bounding_box(
             image, offset_y, offset_x, target_height, target_width)
 
-        return image
+        return image'''

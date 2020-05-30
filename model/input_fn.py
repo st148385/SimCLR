@@ -9,8 +9,8 @@ from model.augmentation_functions import color_distortion
 
 
 
-@gin.configurable                          #Verwendet für darauffolgende Definition die Parameter aus gin.configurable (benutzt wohl config.gin)
-def gen_pipeline_train(ds_name='cifar10',#='mnist',
+@gin.configurable
+def gen_pipeline_train(ds_name='cifar10',
                        tfds_path='~\\tensorflow_datasets',           #/ für Linux, \\ für Windows
                        size_batch=64,
                        b_shuffle=True,
@@ -45,11 +45,11 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
         # Cast image type and normalize to 0/1
         image = tf.cast(image, tf.float32) / 255.0
 
-        x_i=image
-        x_j=image
-        return x_i, x_j, label
+        #x_i=image
+        #x_j=image
+        #return x_i, x_j, label
 
-        #return image, label
+        return image, label
 
     @tf.function
     def _map_augment(*args):        #Wird verwendet von 'dataset = dataset.map(map_func=_map_augment, num_parallel_calls=num_parallel_calls)'
@@ -80,7 +80,7 @@ def gen_pipeline_train(ds_name='cifar10',#='mnist',
     # Shuffle data
     if b_shuffle:
         if shuffle_buffer_size == 0:
-            shuffle_buffer_size = info.splits['train'].num_examples
+            shuffle_buffer_size = info.splits['train'].num_examples     #Wenn shuffle_buffer_size nicht angegeben, wird es zu num_training_expample des datasets
         dataset = dataset.shuffle(buffer_size=shuffle_buffer_size, reshuffle_each_iteration=True)
 
     # Map Augmentation

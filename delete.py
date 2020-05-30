@@ -2,7 +2,9 @@ import tensorflow as tf
 import numpy as np
 import tensorflow_datasets as tfds
 import gin
-
+from PIL import Image
+import matplotlib.pyplot as plt
+from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
 ######
 import os
@@ -34,6 +36,43 @@ print(c,"\n")
 
 d = tf.constant( [ [[1.0, 2.0],[5,-1]], [[1,2],[5,-1]] ] )
 print( tf.math.l2_normalize(d, axis=1) )
+
+
+def crop_and_resize(image, height, width):
+    """Make a random crop and resize it to height `height` and width `width`.
+
+  Args:
+    image: Tensor representing the image.
+    height: Desired image height.
+    width: Desired image width.
+
+  Returns:
+    A `height` x `width` x channels Tensor holding a random crop of `image`.
+  """
+    bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])     #Also ist bbox ein Viereck mit (ymin,xmin,ymax,xmax)=(0,0,1,1)
+    aspect_ratio = width / height
+
+    begin,size,bbox_for_draw = sample_distorted_bounding_box_v2(
+        image_size=tf.shape(image),
+        bounding_boxes=bbox,
+        min_object_covered=0.1, #Mindestens N% des Originalbilds müssen sich in der cropped version wiederfinden lassen
+        aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio), #cropped area hat shape im Bereich [0.75*width/height, 1.333*width/height]
+        area_range=(0.01,0.2),  #cropped area muss in diesem Bereich des Originalbilds liegen (Werte von SimCLR-Github, obwohl nur >0.1 als untere Grenze Sinn macht?)
+        max_attempts=100    #Nach 100 tries einfach das Originalbild beibehalten
+    )
+    slice_of_image=tf.slice(image, begin, size)
+    return tf.image.resize(slice_of_image, size=(width,height), method='bicubic')
+
+#crop_and_resize
+image = Image.open('C:\\Users\Mari\Pictures\Hopetoun Falls Wasserfall Waterfall.jpg')
+image = tf.cast(np.array(image), tf.float32) / 255.0
+plt.subplot(2,1,1)
+plt.imshow(image)
+
+slice=crop_and_resize(image,1200,1200)
+plt.subplot(2,1,2)
+plt.imshow(slice)
+plt.show()
 
 
 

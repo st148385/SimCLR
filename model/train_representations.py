@@ -92,7 +92,7 @@ def train(model, model_head, model_gesamt,
     ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer_head)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
                                               max_to_keep=2, keep_checkpoint_every_n_hours=1)
-    ckpt.restore(ckpt_manager_head.latest_checkpoint)
+    ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
 
     if ckpt_manager_head.latest_checkpoint:
         logging.info(f"Restored from {ckpt_manager_head.latest_checkpoint}.")
