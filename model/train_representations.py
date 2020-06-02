@@ -78,7 +78,7 @@ def train(model, model_head, model_gesamt,
     # Checkpoint für h!
     ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\ckpts
-                                              max_to_keep=2, keep_checkpoint_every_n_hours=1)
+                                              max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt.restore(ckpt_manager.latest_checkpoint)
 
     if ckpt_manager.latest_checkpoint:
@@ -91,7 +91,7 @@ def train(model, model_head, model_gesamt,
     # Checkpoint für z!
     ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer_head)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
-                                              max_to_keep=2, keep_checkpoint_every_n_hours=1)
+                                              max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
 
     if ckpt_manager_head.latest_checkpoint:

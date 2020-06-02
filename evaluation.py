@@ -121,7 +121,7 @@ if __name__ == '__main__':
     device = '0'
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15\\ckpts\\ckpt-59'  #Für tf.train.list_variables( path_model_id )
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-18T15-13-02'
-    path_model_id = ''
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
     #Bestes Resultat mit: path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
 
     # gin config files

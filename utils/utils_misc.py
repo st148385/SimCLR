@@ -58,3 +58,25 @@ def plot_dataset(ds, dataset_name=' '):
             plt.imshow(labels[0])
             plt.title("Original {} Image".format(dataset_name))
             plt.show()
+
+#Von einem Kollegen vom ISS: Nur besten checkpoint speichern (der mit einer besseren eval_accuracy, als alle Vorgänger)
+
+# Save latest eval metrics in a json file in the model directory
+
+#             metrics_path_last = os.path.join(params.path_model_root, "metrics_eval_last.yaml")
+#             utils_misc.save_dict_to_yaml(metrics_res, metrics_path_last)
+#
+#             # If best_eval, best_save_path
+#             eval_acc = metrics_res['mean_iou']            #Hier statt 'metrics_res['mean_iou']' dann meine validation accuracy (val_acc) verwenden.
+#             if eval_acc >= best_eval_acc:
+#                 # Store new best accuracy
+#                 logging.info(f'Found new best metric, new: {eval_acc}, old: {best_eval_acc}')
+#                 best_eval_acc = eval_acc
+#
+#                 # Save weights
+#                 ckpt.save(os.path.join(params.path_ckpts_eval, 'ckpt'))
+#                 logging.info(f'New best model saved')
+#
+#                 # Save best eval metrics in a yamlm file in the model directory
+#                 metrics_path_best = os.path.join(params.path_model_root, "metrics_eval_best.yaml")
+#                 utils_misc.save_dict_to_yaml(metrics_res, metrics_path_best)
