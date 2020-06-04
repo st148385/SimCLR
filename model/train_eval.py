@@ -66,7 +66,7 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
     max_val_acc = max(val_acc)
     corresponding_index = 1 + val_acc.index(max_val_acc)
 
-    print(f"Best validiation accuracy in {eval_epochs} evaluation epochs was {max_val_acc} percent after epoch {corresponding_index}")
+    print(f"Best validiation accuracy in {eval_epochs} evaluation epochs was {max_val_acc}% after epoch {corresponding_index}")
 
 
 #@gin.configurable(blacklist=['model', 'run_paths'])
