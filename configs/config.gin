@@ -10,7 +10,7 @@ ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Ma
 tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
                                             #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
 
-size_batch = 128
+size_batch = 512
 dataset_image_size = 32     #Nach Augmentation haben x_i und x_j Auflösung: (image_size_dataset x image_size_dataset x 3)
 
 gen_pipeline_train.ds_name = %ds_name
@@ -29,7 +29,7 @@ train.n_epochs=1
 train.learning_rate=0.001
 train.save_period = 1
 train.size_batch = %size_batch
-train.tau = 0.5
+train.tau = 0.1
 train.use_split_model = True     #23.5.2020: Es klappen folgende Mögl. (mit summary-Anzeige): (False, True) || (False, False) || (True, False) || (True, True)
-train.use_2optimizers = True
+train.use_2optimizers = False
 
