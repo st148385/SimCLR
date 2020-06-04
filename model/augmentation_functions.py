@@ -51,7 +51,7 @@ def crop_and_resize(image, height, width):
     bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])     #Also ist bbox ein Viereck mit (ymin,xmin,ymax,xmax)=(0,0,1,1)
     aspect_ratio = width / height
 
-    begin,size,bbox_for_draw = sample_distorted_bounding_box_v2(
+    begin, size, _ = sample_distorted_bounding_box_v2(
         image_size=tf.shape(image),
         bounding_boxes=bbox,
         min_object_covered=0.1,     #Mindestens N% des Originalbilds müssen sich in der cropped version wiederfinden lassen
