@@ -1,11 +1,43 @@
 import tensorflow as tf
 import numpy as np
+import tensorflow.keras
 import tensorflow_datasets as tfds
 import gin
 from PIL import Image
 import matplotlib.pyplot as plt
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
+
+class lr_Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, d_model, warmup_steps=4000):
+        super(lr_Schedule, self).__init__()
+
+        self.d_model = d_model
+        self.d_model = tf.cast(self.d_model, tf.float32)
+
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+
+        # for i in range(self.warmup_steps):
+        #      linear = step(1:i)*256
+        #      return linear
+
+        arg1 = tf.math.rsqrt(step/10)
+        #arg1= tf.math.cos(3.14 / step  +  self.warmup_steps)
+
+        arg2 = step * (self.warmup_steps ** -1.5)
+
+        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+
+
+teste_learning_rate_schedule = lr_Schedule(256)
+
+plt.plot(teste_learning_rate_schedule(tf.range(40000, dtype=tf.float32)))
+plt.ylabel("Learning Rate")
+plt.xlabel("Train Step")
+plt.show()
+'''#####
 ######
 import os
 
@@ -73,7 +105,7 @@ slice=crop_and_resize(image,1200,1200)
 plt.subplot(2,1,2)
 plt.imshow(slice)
 plt.show()
-
+'''####
 
 
 '''

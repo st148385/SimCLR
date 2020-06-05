@@ -20,6 +20,8 @@ def gen_pipeline_train(ds_name='cifar10',
                        num_parallel_calls=10,
                        x_size=32
                        ):
+    ''' Input pipeline for SimCLR training "train.py" '''
+
     # Load and prepare tensorflow dataset
     data, info = tfds.load(name=ds_name,
                            data_dir=tfds_path,
@@ -106,6 +108,7 @@ def gen_pipeline_eval(ds_name='cifar10',
                       shuffle_buffer_size=0,
                       dataset_cache=False,
                       num_parallel_calls=10):
+    ''' Input pipeline for linear evaluation "evaluation.py" '''
 
     # Load and prepare tensorflow dataset
     (train_examples, validation_examples), info = tfds.load(

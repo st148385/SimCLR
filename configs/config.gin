@@ -32,4 +32,4 @@ train.size_batch = %size_batch
 train.tau = 0.1
 train.use_split_model = True     #23.5.2020: Es klappen folgende Mögl. (mit summary-Anzeige): (False, True) || (False, False) || (True, False) || (True, True)
 train.use_2optimizers = False
-
+train.learning_rate_scheduling = True

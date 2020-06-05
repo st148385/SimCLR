@@ -2,6 +2,7 @@ import os
 import logging
 import tensorflow as tf
 import tensorflow.keras as ks
+import tensorflow_addons as tfa
 import gin
 import sys
 from utils import utils_params
@@ -47,6 +48,54 @@ def get_negative_mask(batch_size):
         negative_mask[i, i + batch_size] = 0
     return tf.constant(negative_mask)
 
+####################################################################################
+class lr_scheduling_class(tf.keras.optimizers.schedules.LearningRateSchedule):
+    ''' This corresponds to increasing the learning rate linearly for the first "warmup_steps" training steps, and decreasing it thereafter
+    proportionally to the inverse square root of the step number. We used warmup_steps = 4000. See paper https://arxiv.org/pdf/1706.03762.pdf '''
+    def __init__(self, d_model, warmup_steps=2000):
+
+        super(lr_scheduling_class, self).__init__()
+
+        self.d_model = d_model
+        self.d_model = tf.cast(self.d_model, tf.float32)
+
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+        arg1 = tf.math.rsqrt(step)                      #1/sqrt - shaped decay AFTER linear warm-up is done
+        arg2 = step * (self.warmup_steps ** -1.5)       #linear warm-up during trainging steps [0...warmup_steps]
+
+        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+####################################################################################
+
+def learning_rate_schedule(base_learning_rate=0.001, num_examples=50000*2, warmup_epochs=5, size_batch=512, n_epochs=10):
+  """Build learning rate schedule."""
+  global_step = tf.compat.v1.train.get_or_create_global_step()
+  warmup_steps = int(round(warmup_epochs * num_examples // size_batch)) #num_exampels//size_batch ist 1 epoche, warmup_steps sind jz also alle steps von 10 epochs
+  train_steps = num_examples * n_epochs // size_batch + 1       #Alle steps des gesamten Trainings
+
+  scaled_lr = base_learning_rate * size_batch / 256.
+
+  learning_rate = (tf.compat.v1.to_float(global_step) / int(warmup_steps) * scaled_lr
+                   if warmup_steps else scaled_lr)  #Falls warmup_steps = 0 (Division durch Null) -> learning_rate = scaled_lr
+
+  # Cosine decay learning rate schedule
+  total_steps = train_steps
+  learning_rate = tf.compat.v1.where(
+      global_step < warmup_steps, learning_rate,    #condition
+      # tf.compat.v1.train.cosine_decay(              #if condition == True:   do cosine_decay
+      #     learning_rate=scaled_lr,
+      #     global_step=global_step - warmup_steps,
+      #     decay_steps=total_steps - warmup_steps)
+      #     )
+
+      tf.keras.experimental.LinearCosineDecay(
+             initial_learning_rate=scaled_lr, decay_steps=total_steps - warmup_steps)  )
+
+  return learning_rate
+
+
+
 @gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
 def train(model, model_head, model_gesamt,
                    ds_train,
@@ -58,7 +107,8 @@ def train(model, model_head, model_gesamt,
                    size_batch=128,
                    tau=0.5,
                    use_2optimizers=True,
-                   use_split_model=True):
+                   use_split_model=True,
+                   learning_rate_scheduling=False):
     '''Pass both parts of split model and the overall model (all 3 models), we can use the parameter "use_split_model"!'''
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
@@ -68,9 +118,29 @@ def train(model, model_head, model_gesamt,
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))   # <path_model_id>\\logs\\run.log
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")  # <path_model_id>\\logs\\run.log
 
+#possibilities: a) learning_rate = Klasse aus tf.keras.optimizers.schedules.LearningRateSchedule
+#b) learning_rate = tf.keras.experimental.CosineDecayRestarts #Ist wie im "Hutter"-paper mit mult=2
+#c) Verwendung eines anderen optimizers: tfa.optimizers.RectifiedAdam(lr=1e-3, total_steps=10000, warmup_proportion=0.1, min_lr=1e-5)
+
+
     # Define optimizer
-    optimizer = ks.optimizers.Adam(learning_rate=learning_rate)
-    optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate)
+    if learning_rate_scheduling == True:
+        num_examples = 50000*2 #cifar10
+        total_steps = num_examples * n_epochs // size_batch + 1
+
+        optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(d_model=256)) #tf.keras.experimental.CosineDecayRestarts(initial_learning_rate=0.1, first_decay_steps=1000))
+        #optimizer = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
+        optimizer_head = ks.optimizers.Adam(learning_rate=lr_scheduling_class(d_model=256))
+        #optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
+
+        # optimizer = tfa.optimizers.RectifiedAdam(learning_rate=(tf.keras.experimental.LinearCosineDecay(0.001, total_steps-total_steps/0.1)),
+        #                                          total_steps=total_steps, warmup_proportion=0.1, min_lr=0)
+        # optimizer_head = tfa.optimizers.RectifiedAdam(learning_rate=(tf.keras.experimental.LinearCosineDecay(0.001, total_steps-total_steps/0.1)),
+        #                                          total_steps=total_steps, warmup_proportion=0.1, min_lr=0)
+
+    else:
+        optimizer = ks.optimizers.Adam(learning_rate=learning_rate) #used for both: resnetModel (use_split_model=false) and encoderModel (use_split_model=True)
+        optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate)
 
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
