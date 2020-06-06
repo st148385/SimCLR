@@ -49,50 +49,72 @@ def get_negative_mask(batch_size):
     return tf.constant(negative_mask)
 
 ####################################################################################
-class lr_scheduling_class(tf.keras.optimizers.schedules.LearningRateSchedule):
-    ''' This corresponds to increasing the learning rate linearly for the first "warmup_steps" training steps, and decreasing it thereafter
-    proportionally to the inverse square root of the step number. We used warmup_steps = 4000. See paper https://arxiv.org/pdf/1706.03762.pdf '''
-    def __init__(self, d_model, warmup_steps=2000):
+# class lr_scheduling_class(tf.keras.optimizers.schedules.LearningRateSchedule):
+#     ''' This corresponds to increasing the learning rate linearly for the first "warmup_steps" training steps, and decreasing it thereafter
+#     proportionally to the inverse square root of the step number. We used warmup_steps = 4000. See paper https://arxiv.org/pdf/1706.03762.pdf '''
+#     def __init__(self, d_model, warmup_steps=2000):
+#
+#         super(lr_scheduling_class, self).__init__()
+#
+#         self.d_model = d_model
+#         self.d_model = tf.cast(self.d_model, tf.float32)
+#
+#         self.warmup_steps = warmup_steps
+#
+#     def __call__(self, step):
+#         arg1 = tf.math.rsqrt(step)                      #1/sqrt - shaped decay AFTER linear warm-up is done
+#         arg2 = step * (self.warmup_steps ** -1.5)       #linear warm-up during trainging steps [0...warmup_steps]
+#
+#         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+####################################################################################
+class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, lr_max, warmup_steps=20000, overallSteps=194000):
+        super(lr_schedule, self).__init__()
 
-        super(lr_scheduling_class, self).__init__()
+        self.lr_max = lr_max * 140
+        self.lr_max = tf.cast(self.lr_max, tf.float32)
 
-        self.d_model = d_model
-        self.d_model = tf.cast(self.d_model, tf.float32)
+        self.overallSteps = overallSteps
 
         self.warmup_steps = warmup_steps
 
     def __call__(self, step):
-        arg1 = tf.math.rsqrt(step)                      #1/sqrt - shaped decay AFTER linear warm-up is done
-        arg2 = step * (self.warmup_steps ** -1.5)       #linear warm-up during trainging steps [0...warmup_steps]
 
-        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+
+        #arg1 = tf.math.rsqrt(step)
+        cos_decay = ((self.warmup_steps) * (self.warmup_steps ** -1.5)) - ((self.warmup_steps) * (self.warmup_steps ** -1.5)) * \
+                    (1 - tf.math.cos(((step - self.warmup_steps)) / (0.6 * self.overallSteps)))
+
+        lin_warmup = step * (self.warmup_steps ** -1.5)
+
+        return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
 ####################################################################################
 
-def learning_rate_schedule(base_learning_rate=0.001, num_examples=50000*2, warmup_epochs=5, size_batch=512, n_epochs=10):
-  """Build learning rate schedule."""
-  global_step = tf.compat.v1.train.get_or_create_global_step()
-  warmup_steps = int(round(warmup_epochs * num_examples // size_batch)) #num_exampels//size_batch ist 1 epoche, warmup_steps sind jz also alle steps von 10 epochs
-  train_steps = num_examples * n_epochs // size_batch + 1       #Alle steps des gesamten Trainings
-
-  scaled_lr = base_learning_rate * size_batch / 256.
-
-  learning_rate = (tf.compat.v1.to_float(global_step) / int(warmup_steps) * scaled_lr
-                   if warmup_steps else scaled_lr)  #Falls warmup_steps = 0 (Division durch Null) -> learning_rate = scaled_lr
-
-  # Cosine decay learning rate schedule
-  total_steps = train_steps
-  learning_rate = tf.compat.v1.where(
-      global_step < warmup_steps, learning_rate,    #condition
-      # tf.compat.v1.train.cosine_decay(              #if condition == True:   do cosine_decay
-      #     learning_rate=scaled_lr,
-      #     global_step=global_step - warmup_steps,
-      #     decay_steps=total_steps - warmup_steps)
-      #     )
-
-      tf.keras.experimental.LinearCosineDecay(
-             initial_learning_rate=scaled_lr, decay_steps=total_steps - warmup_steps)  )
-
-  return learning_rate
+# def learning_rate_schedule(base_learning_rate=0.001, num_examples=50000*2, warmup_epochs=5, size_batch=512, n_epochs=10):
+#   """Build learning rate schedule."""
+#   global_step = tf.compat.v1.train.get_or_create_global_step()
+#   warmup_steps = int(round(warmup_epochs * num_examples // size_batch)) #num_exampels//size_batch ist 1 epoche, warmup_steps sind jz also alle steps von 10 epochs
+#   train_steps = num_examples * n_epochs // size_batch + 1       #Alle steps des gesamten Trainings
+#
+#   scaled_lr = base_learning_rate * size_batch / 256.
+#
+#   learning_rate = (tf.compat.v1.to_float(global_step) / int(warmup_steps) * scaled_lr
+#                    if warmup_steps else scaled_lr)  #Falls warmup_steps = 0 (Division durch Null) -> learning_rate = scaled_lr
+#
+#   # Cosine decay learning rate schedule
+#   total_steps = train_steps
+#   learning_rate = tf.compat.v1.where(
+#       global_step < warmup_steps, learning_rate,    #condition
+#       # tf.compat.v1.train.cosine_decay(              #if condition == True:   do cosine_decay
+#       #     learning_rate=scaled_lr,
+#       #     global_step=global_step - warmup_steps,
+#       #     decay_steps=total_steps - warmup_steps)
+#       #     )
+#
+#       tf.keras.experimental.LinearCosineDecay(
+#              initial_learning_rate=scaled_lr, decay_steps=total_steps - warmup_steps)  )
+#
+#   return learning_rate
 
 
 
@@ -108,7 +130,7 @@ def train(model, model_head, model_gesamt,
                    tau=0.5,
                    use_2optimizers=True,
                    use_split_model=True,
-                   learning_rate_scheduling=False):
+                   learning_rate_scheduling=True):
     '''Pass both parts of split model and the overall model (all 3 models), we can use the parameter "use_split_model"!'''
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
@@ -125,13 +147,20 @@ def train(model, model_head, model_gesamt,
 
     # Define optimizer
     if learning_rate_scheduling == True:
-        num_examples = 50000*2 #cifar10
-        total_steps = num_examples * n_epochs // size_batch + 1
 
-        optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(d_model=256)) #tf.keras.experimental.CosineDecayRestarts(initial_learning_rate=0.1, first_decay_steps=1000))
-        #optimizer = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
-        optimizer_head = ks.optimizers.Adam(learning_rate=lr_scheduling_class(d_model=256))
-        #optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
+        num_examples = 2 * ds_train_info.splits['train'].num_examples   # 'mal 2' wg SimCLR
+        print("num_examples: ", num_examples, "         //100.000 for cifar10")
+
+        total_steps = n_epochs * ( (num_examples // size_batch) + 1)
+        print("total_steps:", total_steps, "        //over all epochs")
+
+        #optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))   #lr_schedule(lr_max=0.0001)) #tf.keras.experimental.CosineDecay(initial_learning_rate=0.1, first_decay_steps=1000))
+        #optimizer_head = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))  #lr_schedule(lr_max=0.0001))
+
+        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=0.001, overallSteps=total_steps))
+        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=0.001, overallSteps=total_steps))
+
+        # optimizer = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
 
         # optimizer = tfa.optimizers.RectifiedAdam(learning_rate=(tf.keras.experimental.LinearCosineDecay(0.001, total_steps-total_steps/0.1)),
         #                                          total_steps=total_steps, warmup_proportion=0.1, min_lr=0)
@@ -189,7 +218,7 @@ def train(model, model_head, model_gesamt,
         for image, image2, _ in ds_train:
             # Train on batch
             if use_split_model == True:
-                train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train,epoch_tf, use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau)
+                train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau)
             else:
                 train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau)
         # Print summary

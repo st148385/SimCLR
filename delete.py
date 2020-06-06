@@ -5,35 +5,65 @@ import tensorflow_datasets as tfds
 import gin
 from PIL import Image
 import matplotlib.pyplot as plt
+from math import pi as pi
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
 
-class lr_Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=4000):
-        super(lr_Schedule, self).__init__()
+# class lr_Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+#     def __init__(self, lr_max, warmup_steps=20000):
+#         super(lr_Schedule, self).__init__()
+#
+#         self.lr_max = lr_max * 90
+#         self.lr_max = tf.cast(self.lr_max, tf.float32)
+#
+#         self.warmup_steps = warmup_steps
+#
+#     def __call__(self, step):
+#
+#
+#         #arg1 = tf.math.rsqrt(step)
+#         cos_decay = (  (step[self.warmup_steps]) * (self.warmup_steps ** -1.5)  ) - (  (step[self.warmup_steps]) * (self.warmup_steps ** -1.5)  ) * \
+#                     (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.55*len(step)) ))
+#
+#         lin_warmup = step * (self.warmup_steps ** -1.5)
+#
+#         return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
+#         #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
+#
+#
+# teste_learning_rate_schedule = lr_Schedule(lr_max=0.0001)    #actual_lr_max ≈ lr_max
+#
+# plt.plot(teste_learning_rate_schedule(tf.range(195000, dtype=tf.float32)))
+# plt.ylabel("Learning Rate")
+# plt.xlabel("Train Step")
+# plt.show()
 
-        self.d_model = d_model
-        self.d_model = tf.cast(self.d_model, tf.float32)
+class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, lr_max, warmup_steps=20000):
+        super(test_lr, self).__init__()
+
+        self.lr_max = lr_max * 140
+        self.lr_max = tf.cast(self.lr_max, tf.float32)
+
+        self.overallSteps = (100000//512) * 1000 +1
 
         self.warmup_steps = warmup_steps
 
     def __call__(self, step):
 
-        # for i in range(self.warmup_steps):
-        #      linear = step(1:i)*256
-        #      return linear
 
-        arg1 = tf.math.rsqrt(step/10)
-        #arg1= tf.math.cos(3.14 / step  +  self.warmup_steps)
+        cos_decay = (  (self.warmup_steps) * (self.warmup_steps ** -1.5)  ) - (  (self.warmup_steps) * (self.warmup_steps ** -1.5)  ) * \
+                    (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.6*self.overallSteps) ))
 
-        arg2 = step * (self.warmup_steps ** -1.5)
+        lin_warmup = step * (self.warmup_steps ** -1.5)
 
-        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+        return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
+        #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
 
 
-teste_learning_rate_schedule = lr_Schedule(256)
+teste_learning_rate_schedule = test_lr(lr_max=0.001)    #actual_lr_max ≈ +-5% * lr_max
 
-plt.plot(teste_learning_rate_schedule(tf.range(40000, dtype=tf.float32)))
+plt.plot(teste_learning_rate_schedule(tf.range(195000, dtype=tf.float32)))
 plt.ylabel("Learning Rate")
 plt.xlabel("Train Step")
 plt.show()
