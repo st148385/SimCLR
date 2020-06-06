@@ -76,7 +76,8 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
         self.overallSteps = overallSteps
 
-        self.warmup_steps = warmup_steps
+        self.warmup_steps = (overallSteps * 0.1)
+
 
     def __call__(self, step):
 
@@ -148,6 +149,8 @@ def train(model, model_head, model_gesamt,
     # Define optimizer
     if learning_rate_scheduling == True:
 
+        print("Continues WITH using learning rate scheduling")
+
         num_examples = 2 * ds_train_info.splits['train'].num_examples   # 'mal 2' wg SimCLR
         print("num_examples: ", num_examples, "         //100.000 for cifar10")
 
@@ -168,6 +171,7 @@ def train(model, model_head, model_gesamt,
         #                                          total_steps=total_steps, warmup_proportion=0.1, min_lr=0)
 
     else:
+        print("Continues WITHOUT using learning rate scheduling!")
         optimizer = ks.optimizers.Adam(learning_rate=learning_rate) #used for both: resnetModel (use_split_model=false) and encoderModel (use_split_model=True)
         optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate)
 
