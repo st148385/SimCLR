@@ -3,8 +3,12 @@ import numpy as np
 import cv2
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
+
 #############################################################################################
 # Funktionen
+
+
+
 def random_apply(func, p, x):
     """Randomly apply function func to x with probability p."""
     return tf.cond(

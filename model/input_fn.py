@@ -58,16 +58,28 @@ def gen_pipeline_train(ds_name='cifar10',
         image = args[0]
         label = args[0]
 
-        # Please use gaussian_filter(), if dataset is NOT cifar10
-        x_i, x_j = gaussian_filter(image, image)
 
+        # Use these, if dataset IS cifar10:
+        if ds_name in ['cifar10']:
+            print("NOT using gaussian_blur, because dataset is cifar10: ds_name =", ds_name)
 
+            x_i = random_crop_with_resize(image, x_size, x_size)
+            x_i = color_distortion(x_i)
 
-        x_i = random_crop_with_resize(x_i, x_size, x_size)
-        x_i = color_distortion(x_i)
+            x_j = random_crop_with_resize(image, x_size, x_size)
+            x_j = color_distortion(x_j)
 
-        x_j = random_crop_with_resize(x_j, x_size, x_size)
-        x_j = color_distortion(x_j)
+        # Please use gaussian_filter(), if dataset is NOT cifar10:
+        else:
+            print("Actually using gaussian_blur, because dataset is NOT cifar10: ds_name =", ds_name)
+
+            x_i, x_j = gaussian_filter(image, image)
+
+            x_i = random_crop_with_resize(x_i, x_size, x_size)
+            x_i = color_distortion(x_i)
+
+            x_j = random_crop_with_resize(x_j, x_size, x_size)
+            x_j = color_distortion(x_j)
 
 
         # Data augmentation takes place here ;) here, one image is processed, not a batch so maybe return patch1, patch2, label
