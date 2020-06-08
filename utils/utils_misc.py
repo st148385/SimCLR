@@ -1,7 +1,4 @@
-import matplotlib
-matplotlib.use('TkAgg')  # qt may not work on server
 from matplotlib import pyplot as plt
-
 
 import logging
 
