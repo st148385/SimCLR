@@ -91,31 +91,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
 ####################################################################################
 
-# def learning_rate_schedule(base_learning_rate=0.001, num_examples=50000*2, warmup_epochs=5, size_batch=512, n_epochs=10):
-#   """Build learning rate schedule."""
-#   global_step = tf.compat.v1.train.get_or_create_global_step()
-#   warmup_steps = int(round(warmup_epochs * num_examples // size_batch)) #num_exampels//size_batch ist 1 epoche, warmup_steps sind jz also alle steps von 10 epochs
-#   train_steps = num_examples * n_epochs // size_batch + 1       #Alle steps des gesamten Trainings
-#
-#   scaled_lr = base_learning_rate * size_batch / 256.
-#
-#   learning_rate = (tf.compat.v1.to_float(global_step) / int(warmup_steps) * scaled_lr
-#                    if warmup_steps else scaled_lr)  #Falls warmup_steps = 0 (Division durch Null) -> learning_rate = scaled_lr
-#
-#   # Cosine decay learning rate schedule
-#   total_steps = train_steps
-#   learning_rate = tf.compat.v1.where(
-#       global_step < warmup_steps, learning_rate,    #condition
-#       # tf.compat.v1.train.cosine_decay(              #if condition == True:   do cosine_decay
-#       #     learning_rate=scaled_lr,
-#       #     global_step=global_step - warmup_steps,
-#       #     decay_steps=total_steps - warmup_steps)
-#       #     )
-#
-#       tf.keras.experimental.LinearCosineDecay(
-#              initial_learning_rate=scaled_lr, decay_steps=total_steps - warmup_steps)  )
-#
-#   return learning_rate
+
 
 
 
@@ -385,6 +361,7 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
     # Update metrics
     metric_loss_train.update_state(loss)
     tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+             "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
              output_stream=sys.stdout)
     return 0
 
@@ -497,5 +474,6 @@ def train_step_just1model(model, image, image2, optimizer, metric_loss_train, ep
     # Update metrics
     metric_loss_train.update_state(loss)
     tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+             "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
              output_stream=sys.stdout)
     return 0

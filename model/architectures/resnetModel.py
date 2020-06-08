@@ -4,9 +4,9 @@ import gin
 
 #Gesamtes Model unter Verwendung von resnet-50
 @gin.configurable('resnetModel')
-def Architechture(input_size=224, mlp_dense1=512, mlp_dense2=128):
+def Architechture(input_size=32, mlp_dense1=512, mlp_dense2=128):
 
-    rn50 = tf.keras.applications.ResNet50(include_top=False, weights=None, input_tensor=None, input_shape=None)
+    rn50 = tf.keras.applications.ResNet50(include_top=False, weights=None, input_tensor=None, input_shape=(input_size,input_size,3))
     rn50.trainable = True
 
     # Layers

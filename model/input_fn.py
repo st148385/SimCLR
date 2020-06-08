@@ -58,7 +58,10 @@ def gen_pipeline_train(ds_name='cifar10',
         image = args[0]
         label = args[0]
 
+        # Please use gaussian_filter(), if dataset is NOT cifar10
         x_i, x_j = gaussian_filter(image, image)
+
+
 
         x_i = random_crop_with_resize(x_i, x_size, x_size)
         x_i = color_distortion(x_i)

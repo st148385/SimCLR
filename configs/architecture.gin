@@ -1,5 +1,5 @@
 # Network architecture
-input_size = 224 ###
+input_size = 32 ###
 MLP_dense_in = 512
 MLP_dense_out = 128     # 128 nach SimCLR paper
 
