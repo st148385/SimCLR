@@ -83,7 +83,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 
         #arg1 = tf.math.rsqrt(step)
-        cos_decay = ((self.warmup_steps) * (self.warmup_steps ** -1.5)) - ((self.warmup_steps) * (self.warmup_steps ** -1.5)) * \
+        cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ((self.warmup_steps) * (self.warmup_steps ** -1.5)) * \
                     (1 - tf.math.cos(((step - self.warmup_steps)) / (0.6 * self.overallSteps)))
 
         lin_warmup = step * (self.warmup_steps ** -1.5)
