@@ -54,6 +54,7 @@ class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
 
         cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ( self.warmup_steps * (self.warmup_steps ** -1.5)  ) * \
                     (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.6*self.overallSteps) ))
+        # 0.001*140 * (  (  (19600) * (19600 ^( -1.5) )  ) - (  (19600) * (19600 ^( -1.5) )  ) * (1-cos( (X-19600) / (0.6*196000) )  )  )
 
         lin_warmup = step * (self.warmup_steps ** -1.5)
 

@@ -73,9 +73,6 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
 def load_checkpoint_weights(model,
                             run_paths,
                             learning_rate=0.001):
-    # Generate summary writer
-    #writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
-    #logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")
 
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)

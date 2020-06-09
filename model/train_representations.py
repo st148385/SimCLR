@@ -48,24 +48,7 @@ def get_negative_mask(batch_size):
         negative_mask[i, i + batch_size] = 0
     return tf.constant(negative_mask)
 
-####################################################################################
-# class lr_scheduling_class(tf.keras.optimizers.schedules.LearningRateSchedule):
-#     ''' This corresponds to increasing the learning rate linearly for the first "warmup_steps" training steps, and decreasing it thereafter
-#     proportionally to the inverse square root of the step number. We used warmup_steps = 4000. See paper https://arxiv.org/pdf/1706.03762.pdf '''
-#     def __init__(self, d_model, warmup_steps=2000):
-#
-#         super(lr_scheduling_class, self).__init__()
-#
-#         self.d_model = d_model
-#         self.d_model = tf.cast(self.d_model, tf.float32)
-#
-#         self.warmup_steps = warmup_steps
-#
-#     def __call__(self, step):
-#         arg1 = tf.math.rsqrt(step)                      #1/sqrt - shaped decay AFTER linear warm-up is done
-#         arg2 = step * (self.warmup_steps ** -1.5)       #linear warm-up during trainging steps [0...warmup_steps]
-#
-#         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+
 ####################################################################################
 class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, lr_max, warmup_steps=20000, overallSteps=194000):
@@ -82,7 +65,6 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __call__(self, step):
 
 
-        #arg1 = tf.math.rsqrt(step)
         cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ((self.warmup_steps) * (self.warmup_steps ** -1.5)) * \
                     (1 - tf.math.cos(((step - self.warmup_steps)) / (0.6 * self.overallSteps)))
 
@@ -94,20 +76,20 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 
 
-
 @gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
 def train(model, model_head, model_gesamt,
-                   ds_train,
-                   ds_train_info,
-                   run_paths,
-                   n_epochs=10,
-                   learning_rate=0.001,
-                   save_period=1,
-                   size_batch=128,
-                   tau=0.5,
-                   use_2optimizers=True,
-                   use_split_model=True,
-                   learning_rate_scheduling=True):
+          ds_train,
+          ds_train_info,
+          run_paths,
+          n_epochs=10,
+          learning_rate_noScheduling=0.001,
+          lr_max_ifScheduling=0.001,
+          save_period=1,
+          size_batch=128,
+          tau=0.5,
+          use_2optimizers=True,
+          use_split_model=True,
+          use_learning_rate_scheduling=True):
     '''Pass both parts of split model and the overall model (all 3 models), we can use the parameter "use_split_model"!'''
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
@@ -123,7 +105,7 @@ def train(model, model_head, model_gesamt,
 
 
     # Define optimizer
-    if learning_rate_scheduling == True:
+    if use_learning_rate_scheduling == True:
 
         print("Continues WITH using learning rate scheduling")
 
@@ -133,11 +115,19 @@ def train(model, model_head, model_gesamt,
         total_steps = n_epochs * ( (num_examples // size_batch) + 1)
         print("total_steps:", total_steps, "        //over all epochs")
 
+        # Currently lr_max = f(size_batch) (it depends on batch size). TODO Maybe try to fix that later
+        if size_batch == 2048:
+            lr_max_ifScheduling/=2
+        elif size_batch == 1024:
+            lr_max_ifScheduling/=1.5
+        else:
+            lr_max_ifScheduling=lr_max_ifScheduling
+
         #optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))   #lr_schedule(lr_max=0.0001)) #tf.keras.experimental.CosineDecay(initial_learning_rate=0.1, first_decay_steps=1000))
         #optimizer_head = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))  #lr_schedule(lr_max=0.0001))
 
-        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=0.001, overallSteps=total_steps))
-        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=0.001, overallSteps=total_steps))
+        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps))
+        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps))
 
         # optimizer = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
 
@@ -148,8 +138,8 @@ def train(model, model_head, model_gesamt,
 
     else:
         print("Continues WITHOUT using learning rate scheduling!")
-        optimizer = ks.optimizers.Adam(learning_rate=learning_rate) #used for both: resnetModel (use_split_model=false) and encoderModel (use_split_model=True)
-        optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate)
+        optimizer = ks.optimizers.Adam(learning_rate=learning_rate_noScheduling) #used for both: resnetModel (use_split_model=false) and encoderModel (use_split_model=True)
+        optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate_noScheduling)
 
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
@@ -198,9 +188,10 @@ def train(model, model_head, model_gesamt,
         for image, image2, _ in ds_train:
             # Train on batch
             if use_split_model == True:
-                train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau)
+                train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
+                           use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
             else:
-                train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau)
+                train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
         # Print summary
         if epoch <=0:
             if use_split_model:
@@ -244,7 +235,7 @@ def train(model, model_head, model_gesamt,
 
 
 @tf.function
-def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau):
+def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau, use_lrScheduling):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
 
@@ -360,15 +351,21 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
     # Update metrics
     metric_loss_train.update_state(loss)
-    tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+    if use_lrScheduling:
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
              "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
              output_stream=sys.stdout)
+    else:
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+                 "   \tcurrent lr is:", optimizer.learning_rate,
+                 output_stream=sys.stdout)
+
     return 0
 
 
 
 @tf.function
-def train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau):
+def train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau, use_lrScheduling):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
 
@@ -473,7 +470,12 @@ def train_step_just1model(model, image, image2, optimizer, metric_loss_train, ep
 
     # Update metrics
     metric_loss_train.update_state(loss)
-    tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+    if use_lrScheduling:
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
              "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
              output_stream=sys.stdout)
+    else:
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+                 "   \tcurrent lr is:", optimizer.learning_rate,
+                 output_stream=sys.stdout)
     return 0
