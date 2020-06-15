@@ -116,7 +116,7 @@ def gen_pipeline_train(ds_name='cifar10',
 @gin.configurable
 def gen_pipeline_eval(ds_name='cifar10',
                       tfds_path='~/tensorflow_datasets',
-                      RESIZE_TO_RES=224,
+                      RESIZE_TO_RES=32,
                       BATCH_SIZE=32,
                       b_shuffle=True,
                       size_buffer_cpu=5,
@@ -124,6 +124,12 @@ def gen_pipeline_eval(ds_name='cifar10',
                       dataset_cache=False,
                       num_parallel_calls=10):
     ''' Input pipeline for linear evaluation "evaluation.py" '''
+
+    # Choose 'RESIZE_TO_RES' value fitting to the dataset 'ds_name'
+    if ds_name in ['cifar10', 'cifar100', 'mnist', 'fashion_mnist']:
+        RESIZE_TO_RES=32
+    if ds_name in ['tf_flowers', 'imagenet']:
+        RESIZE_TO_RES=224
 
     # Load and prepare tensorflow dataset
     (train_examples, validation_examples), info = tfds.load(
@@ -142,7 +148,7 @@ def gen_pipeline_eval(ds_name='cifar10',
     print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", num_validation_examples)
 
 
-    # Auf IMAGE_RES formattieren und auf [0,1] normalisieren
+    # Auf IMAGE_RES formatieren und auf [0,1] normalisieren
     def format_image(image, label):
         image = tf.image.resize(image, (RESIZE_TO_RES, RESIZE_TO_RES)) / 255.0
         return image, label
@@ -153,8 +159,8 @@ def gen_pipeline_eval(ds_name='cifar10',
     # This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 
 
-    train_batches = train_examples.cache().shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
-    validation_batches = validation_examples.cache().map(format_image).batch(BATCH_SIZE).prefetch(1)
+    train_batches = train_examples.map(format_image).cache().shuffle(num_examples // 4).batch(BATCH_SIZE).prefetch(1)
+    validation_batches = validation_examples.map(format_image).cache().batch(BATCH_SIZE).prefetch(1)
 
     image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
     image_batch = image_batch.numpy()

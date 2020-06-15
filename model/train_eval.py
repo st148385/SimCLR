@@ -9,8 +9,10 @@ from utils import utils_params
 import matplotlib.pyplot as plt
 
 @gin.configurable #(whitelist=[eval_epochs])
-def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches, eval_epochs=2,
-                                             dataset_num_classes=10, plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
+def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches,
+                                             eval_epochs=2, dataset_num_classes=10,
+                                             plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
+
     #Freeze pre-trained encoder h(•)
     model_before_dense.trainable = False
 

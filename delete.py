@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from math import pi as pi
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
+#Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
 
 # class lr_Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 #     def __init__(self, lr_max, warmup_steps=20000):
