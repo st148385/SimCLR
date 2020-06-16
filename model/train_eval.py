@@ -18,7 +18,7 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
 
     #Build eval_model
     model = tf.keras.Sequential([
-         model_before_dense,
+         model_before_dense,     #model_before_dense is encoderModel with or w/o loaded ckpts, depending on path_model_id = '' or path_model_id = '~/path'
          tf.keras.layers.Dense(dataset_num_classes)
          ])
 
