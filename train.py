@@ -36,7 +36,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
     # and evalutation pipeline:
     # ds_eval, ds_eval_info = input_fn.gen_pipeline_eval()
-    # (Evaluation is maybe in another script, cause this script will only train the model in a unsupervised way. No eval needed)
+    # (Evaluation is maybe in another script, cause this script will only train the model in an unsupervised way. No eval needed)
 
 
 
@@ -47,8 +47,8 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
 
 
-    im_size=224 #Vorübergehend zum Plotten
-    orig_im_size=219
+    # im_size=224 #Vorübergehend zum Plotten
+    # orig_im_size=219
     for image1, image2, label in ds_train.take(1):                                      #PrefetchDataset.take(N) nimmt also N image1-, image2- und label-Batches aus ds_train
             print("shape(image1):", np.shape(image1),  "\n\n\n")        #(128, im_size, im_size, 3)
             print("shape(image2):", np.shape(image2),  "\n\n\n")        #(128, im_size, im_size, 3)

@@ -241,10 +241,10 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
-            h_i = model(image)          # 'gen_model_encoder' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
-            z_i = model_head(h_i)
-            h_j = model(image2)
-            z_j = model_head(h_j)
+            h_i = model(image, training=True)          # 'gen_model_encoder' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
+            z_i = model_head(h_i, training=True)
+            h_j = model(image2, training=True)
+            z_j = model_head(h_j, training=True)
 
 
             #print("h_i:\n",h_i.shape)       #(128,128)
@@ -371,8 +371,8 @@ def train_step_just1model(model, image, image2, optimizer, metric_loss_train, ep
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
-            h_i, z_i = model(image)
-            h_j, z_j = model(image2)
+            h_i, z_i = model(image, training=True)
+            h_j, z_j = model(image2, training=True)
 
 
             #print("h_i:\n",h_i.shape)       #(128,128)

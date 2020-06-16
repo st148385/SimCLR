@@ -12,7 +12,7 @@ def Architechture(input_size=32, mlp_dense1=512, mlp_dense2=128):
     # Layers
     # f(•)
     inputs = tf.keras.Input((input_size, input_size, 3))
-    h_a = rn50(inputs, training=True)
+    h_a = rn50(inputs)
     h_a = tf.keras.layers.GlobalAveragePooling2D()(h_a)
     # g(•)
     z_a = tf.keras.layers.Dense(mlp_dense1)(h_a)
