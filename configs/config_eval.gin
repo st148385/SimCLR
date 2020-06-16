@@ -16,7 +16,7 @@ gen_pipeline_eval.tfds_path = %tfds_path
 gen_pipeline_eval.BATCH_SIZE = 32
 gen_pipeline_eval.RESIZE_TO_RES = 32   #irrelevant for cifar10/100, flowers, imagenet
 
-n_eval_epochs = 2
+n_eval_epochs = 3
 plot_path = 'aktueller_plot.png'
 
 train_evaluation_network_and_plot_result.eval_epochs = %n_eval_epochs          # n_epochs vom Training des evaluation network

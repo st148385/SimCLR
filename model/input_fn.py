@@ -128,8 +128,10 @@ def gen_pipeline_eval(ds_name='cifar10',
     # Choose 'RESIZE_TO_RES' value fitting to the dataset 'ds_name'
     if ds_name in ['cifar10', 'cifar100', 'mnist', 'fashion_mnist']:
         RESIZE_TO_RES=32
+        print("Changed (or stayed on) RESIZE_TO_RES =", RESIZE_TO_RES, "to be consistent with used dataset: ", ds_name)
     if ds_name in ['tf_flowers', 'imagenet']:
         RESIZE_TO_RES=224
+        print("Changed (or stayed on) RESIZE_TO_RES =", RESIZE_TO_RES, "to be consistent with used dataset: ", ds_name)
 
     # Load and prepare tensorflow dataset
     (train_examples, validation_examples), info = tfds.load(
@@ -159,8 +161,8 @@ def gen_pipeline_eval(ds_name='cifar10',
     # This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 
 
-    train_batches = train_examples.map(format_image).cache().shuffle(num_examples // 4).batch(BATCH_SIZE).prefetch(1)
-    validation_batches = validation_examples.map(format_image).cache().batch(BATCH_SIZE).prefetch(1)
+    train_batches = train_examples.cache().shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
+    validation_batches = validation_examples.cache().map(format_image).batch(BATCH_SIZE).prefetch(1)
 
     image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
     image_batch = image_batch.numpy()
