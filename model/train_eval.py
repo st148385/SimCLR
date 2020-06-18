@@ -70,6 +70,10 @@ def train_evaluation_network_and_plot_result(model_before_dense, train_batches, 
 
     print(f"Best validation accuracy in {eval_epochs} evaluation epochs was {max_val_acc} after epoch {corresponding_index}/{eval_epochs}")
 
+    #Get config
+    gin_string = gin.operative_config_str()
+    logging.info(f'Fetched config parameters: {gin_string}.')
+    utils_params.save_gin(run_paths['path_gin_eval'], gin_string)  # <path_model_id>\\config_operative.gin
 
 #@gin.configurable(blacklist=['model', 'run_paths'])
 def load_checkpoint_weights(model,
