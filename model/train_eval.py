@@ -9,16 +9,16 @@ from utils import utils_params
 import matplotlib.pyplot as plt
 
 @gin.configurable #(whitelist=[eval_epochs])
-def train_evaluation_network_and_plot_result(model_before_dense, train_batches, validation_batches,
+def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, validation_batches,
                                              eval_epochs=2, dataset_num_classes=10,
                                              plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
 
     #Freeze pre-trained encoder h(•)
-    model_before_dense.trainable = False
+    simclr_encoder_h.trainable = False
 
     #Build eval_model
     model = tf.keras.Sequential([
-         model_before_dense,     #model_before_dense is encoderModel with or w/o loaded ckpts, depending on path_model_id = '' or path_model_id = '~/path'
+         simclr_encoder_h,     #model_before_dense is encoderModel with or w/o loaded ckpts, depending on path_model_id = '' or path_model_id = '~/path'
          tf.keras.layers.Dense(dataset_num_classes)
          ])
 
