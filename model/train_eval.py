@@ -64,6 +64,9 @@ def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, va
     plt.savefig(plot_folder)
     plt.show()
 
+    #Check trainable (also visible in model summary)
+    print("simclr_encoder_h was trainable =", simclr_encoder_h.trainable, "as seen in summary above")
+
     #Best val_acc with corresponding epoch
     max_val_acc = max(val_acc)
     corresponding_index = 1 + val_acc.index(max_val_acc)
