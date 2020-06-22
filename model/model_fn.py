@@ -14,13 +14,13 @@ def gen_model(Architecture, **kwargs):
 
 #Architecture_encoder
 @gin.configurable()
-def gen_encoderModel(Architecture_encoder, **kwargs):
+def gen_encoderModel(Architecture_encoder, input_size, mlp_dense1, mlp_dense2):
     """Model function defining the graph operations.
     :param architecture: architecture module containing Architecture class (tf.keras.Model)
     :param kwargs: additional keywords passed directly to model
     """
 
-    model = Architecture_encoder(**kwargs)
+    model = Architecture_encoder(input_size, mlp_dense1, mlp_dense2)
 
     return model
 
@@ -39,7 +39,15 @@ def gen_headModel(Architecture_head, **kwargs):
 
 #Erhält jetzt eine Architecture aus 'architectures', z.B. 'testModel' über architecture.gin: "gen_model.Architecture = @testModel"
 
+@gin.configurable()
+def gen_resnet50(architecture_custom_resnet_50, input_size, mlp_dense1, mlp_dense2):
+    model=architecture_custom_resnet_50()
+    model.build( input_shape = (None, input_size, input_size, 3) )
+    #model.trainable=False
+    #model.summary()
 
+
+    return model
 
 
 

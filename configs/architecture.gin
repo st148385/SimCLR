@@ -4,20 +4,28 @@ MLP_dense_in = 512
 MLP_dense_out = 128     # 128 nach SimCLR paper
 
 
+# Full SimCLR model h(g(•))
 gen_model.Architecture = @resnetModel
 gen_model.input_size = %input_size
 gen_model.mlp_dense1 = %MLP_dense_in
 gen_model.mlp_dense2 = %MLP_dense_out
 
 
-# Network architecture
+# Encoder h(•)
 gen_encoderModel.Architecture_encoder = @encoderModel
-gen_model.input_size = %input_size
-gen_model.mlp_dense1 = %MLP_dense_in
-gen_model.mlp_dense2 = %MLP_dense_out
+gen_encoderModel.input_size = %input_size
+gen_encoderModel.mlp_dense1 = %MLP_dense_in
+gen_encoderModel.mlp_dense2 = %MLP_dense_out
 
-# Network architecture
+# Projection Head g(•)
 gen_headModel.Architecture_head = @headModel
-gen_model.input_size = %input_size
-gen_model.mlp_dense1 = %MLP_dense_in
-gen_model.mlp_dense2 = %MLP_dense_out
+gen_headModel.input_size = %input_size
+gen_headModel.mlp_dense1 = %MLP_dense_in
+gen_headModel.mlp_dense2 = %MLP_dense_out
+
+
+# Encoder h(•) with custom resnet50
+gen_resnet50.architecture_custom_resnet_50 = @encoderResnet50
+gen_resnet50.input_size = %input_size
+gen_resnet50.mlp_dense1 = %MLP_dense_in
+gen_resnet50.mlp_dense2 = %MLP_dense_out

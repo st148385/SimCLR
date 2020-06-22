@@ -70,7 +70,8 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
     # Define model
     #model = model_fn.gen_Model()
-    encoder_f = model_fn.gen_encoderModel()
+    #encoder_f = model_fn.gen_encoderModel()
+    encoder_f = model_fn.gen_resnet50()
     projectionhead_g = model_fn.gen_headModel()
     gesamtmodel_f_g = model_fn.gen_model()
 

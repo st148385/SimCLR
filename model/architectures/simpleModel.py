@@ -3,7 +3,7 @@ import gin
 
 
 @gin.configurable('simpleModel')
-def Architechture(input_size=32, n_filters_in=16, kernel_size=3, neurons=128):
+def Architechture_simpleModel(input_size=32, n_filters_in=16, kernel_size=3, neurons=128):
 
     # f(•)
     inputs = tf.keras.Input((input_size, input_size, 3))

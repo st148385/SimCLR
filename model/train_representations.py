@@ -334,7 +334,7 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
-        #print(loss)
+
         #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
 
         gradients = tape.gradient(loss, [model.trainable_variables, model_head.trainable_variables])        #gradients ist jz liste mit 2 Elementen [0] und [1]
