@@ -47,10 +47,26 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
     list_of_val_acc = []
 
     # Freeze pre-trained encoder h(•)
-    simclr_encoder_h.trainable = False
+    simclr_encoder_h.trainable = False   #Additionally changes the train_step function to train_step for upperbound or simclr_eval
 
     @tf.function
-    def train_step(images, labels):
+    def train_step_normal(images, labels):
+        a = simclr_encoder_h(images, training=False)
+
+        with tf.GradientTape() as tape:
+
+            b = denseModel(a)
+
+            loss = loss_object(labels, b)
+        gradients = tape.gradient(loss, denseModel.trainable_variables)
+
+        optimizer.apply_gradients(zip(gradients, denseModel.trainable_variables))
+
+        train_loss(loss)
+        train_accuracy(labels, b)
+
+    @tf.function
+    def train_step_upperBound(images, labels):
         with tf.GradientTape() as tape:
             a = simclr_encoder_h(images, training=True)
             b = denseModel(a)
@@ -63,6 +79,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
 
         train_loss(loss)
         train_accuracy(labels, b)
+
 
     @tf.function
     def validation_step(images, labels):
@@ -88,7 +105,11 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
 
         # Train
         for image, label in train_batches:
-            train_step(image, label)
+            if simclr_encoder_h.trainable==True:
+                train_step_upperBound(image, label)
+            else:
+                train_step_normal(image, label)
+
         with train_summary_writer.as_default():
             tf.summary.scalar('loss', train_loss.result(), step=epoch)
             tf.summary.scalar('accuracy', train_accuracy.result(), step=epoch)
@@ -159,12 +180,6 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
     plt.show()
 
     return 0
-
-
-
-
-
-
 
 
 
@@ -256,6 +271,9 @@ def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, va
     utils_params.save_gin(run_paths['path_gin_eval'], gin_string)  # <path_model_id>\\config_operative_eval.gin
 
 
+
+
+
 #@gin.configurable(blacklist=['model', 'run_paths'])
 def load_checkpoint_weights(model,
                             run_paths,
@@ -263,6 +281,7 @@ def load_checkpoint_weights(model,
     ''' Expects:
     1) model to load checkpoint into
     2) path containing the checkpoint-files, which are ckpt-X.index, ckpt-X.data-00000-of-00002 and the file "checkpoint"
+    (optionally: 3) learning_rate of Adam optimizer)
     Does:
     Loads checkpoint from run_paths into model '''
 

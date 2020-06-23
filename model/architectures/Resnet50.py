@@ -7,13 +7,13 @@ class ResNetTypeII(tf.keras.Model):
     def __init__(self, layer_params):
         super(ResNetTypeII, self).__init__()
         self.conv1 = tf.keras.layers.Conv2D(filters=64,
-                                            kernel_size=(7, 7),
-                                            strides=2,
+                                            #kernel_size=(7, 7),        #changed to kernel_size=(3,3)
+                                            #strides=2,                 #and strides=1 for cifar10
+                                            kernel_size=(3, 3),
+                                            strides=1,
                                             padding="same")
         self.bn1 = tf.keras.layers.BatchNormalization()
-        self.pool1 = tf.keras.layers.MaxPool2D(pool_size=(3, 3),
-                                               strides=2,
-                                               padding="same")
+        #self.pool1 = tf.keras.layers.MaxPool2D(pool_size=(3, 3), strides=2, padding="same")
 
         self.layer1 = make_bottleneck_layer(filter_num=64,
                                             blocks=layer_params[0])
@@ -34,12 +34,13 @@ class ResNetTypeII(tf.keras.Model):
         x = self.conv1(inputs)
         x = self.bn1(x, training=training)
         x = tf.nn.relu(x)
-        x = self.pool1(x)
+        #x = self.pool1(x)      #Entfernt wg. SimCLR paper: lin eval with cifar10
         x = self.layer1(x, training=training)
         x = self.layer2(x, training=training)
         x = self.layer3(x, training=training)
         x = self.layer4(x, training=training)
         output = self.avgpool(x)
+
         #x = self.avgpool(x)
         #output = self.fc(x)
 

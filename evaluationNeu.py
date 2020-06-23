@@ -36,8 +36,6 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 
 
 
-
-
 #main()
 if __name__ == '__main__':
     device = '0'

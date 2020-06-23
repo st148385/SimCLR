@@ -41,7 +41,7 @@ def color_distortion(image, s=1.0):
     return image
 
 
-def crop_and_resize(image, height, width):
+def crop_and_resize(image, height, width, minCrop=0.08):
     """Make a random crop and resize it to height `height` and width `width`.
 
   Args:
@@ -60,7 +60,7 @@ def crop_and_resize(image, height, width):
         bounding_boxes=bbox,
         min_object_covered=0.1,     #Mindestens N% des Originalbilds müssen sich in der cropped version wiederfinden lassen
         aspect_ratio_range=(3. / 4 * aspect_ratio, 4. / 3. * aspect_ratio),     #cropped area hat shape im Bereich [0.75*width/height, 1.333*width/height]
-        area_range=(0.08,1),    #cropped area muss in diesem Bereich des Originalbilds liegen (Werte von SimCLR-Github, obwohl nur >0.1 als untere Grenze Sinn macht?)
+        area_range=(minCrop,1),    #cropped area muss in diesem Bereich des Originalbilds liegen (Werte von SimCLR-Github, obwohl nur >0.1 als untere Grenze Sinn macht?)
         max_attempts=100    #Nach 100 tries einfach das Originalbild beibehalten
     )
     slice_of_image=tf.slice(image, begin, size)
@@ -77,7 +77,7 @@ def crop_and_resize(image, height, width):
     # return tf.compat.v1.image.resize_bicubic([image], [height, width])[0]
 
 
-def random_crop_with_resize(image, height, width, p=1.0):
+def random_crop_with_resize(image, height, width, p=1.0, minCrop=0.08):
     """Randomly crop and resize an image.
 
   Args:
@@ -85,13 +85,15 @@ def random_crop_with_resize(image, height, width, p=1.0):
     height: Height of output image.
     width: Width of output image.
     p: Probability of applying this transformation.
+    minCrop: Minimal possible size of the crop. E.g. crop_height = [minCrop, 1] * height.
+    At least 10% of original image can automatically be found in the crop though.
 
   Returns:
     A preprocessed image `Tensor`.
   """
 
     def _transform(image):
-        image = crop_and_resize(image, height, width)
+        image = crop_and_resize(image, height, width, minCrop=minCrop)
         return image
 
     return random_apply(_transform, p=p, x=image)

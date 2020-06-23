@@ -7,7 +7,7 @@ from model.augmentation_functions import gaussian_filter
 from model.augmentation_functions import random_crop_with_resize
 from model.augmentation_functions import color_distortion
 
-
+import matplotlib.pyplot as plt
 
 @gin.configurable
 def gen_pipeline_train(ds_name='cifar10',
@@ -118,6 +118,7 @@ def gen_pipeline_eval(ds_name='cifar10',
                       tfds_path='~/tensorflow_datasets',
                       RESIZE_TO_RES=32,
                       BATCH_SIZE=32,
+                      minCrop=0.5,
                       b_shuffle=True,
                       size_buffer_cpu=5,
                       shuffle_buffer_size=0,
@@ -155,19 +156,32 @@ def gen_pipeline_eval(ds_name='cifar10',
         image = tf.image.resize(image, (RESIZE_TO_RES, RESIZE_TO_RES)) / 255.0
         return image, label
 
+    def eval_augmentation(image, label):
+        image = tf.image.random_flip_left_right(image, seed=None)
+        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, minCrop)
+        return image, label
 
     # 2020-05-19 11:48:18.724911: W tensorflow/core/kernels/data/cache_dataset_ops.cc:822] The calling iterator did not fully read the dataset being cached.
     # In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset will be discarded.
     # This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 
-
-    train_batches = train_examples.cache().shuffle(num_examples // 4).map(format_image).batch(BATCH_SIZE).prefetch(1)
-    validation_batches = validation_examples.cache().map(format_image).batch(BATCH_SIZE).prefetch(1)
+    #deterministic map -> cache -> shuffle -> random map, aka augmentation (not for validation or test sets) -> batch -> prefetch
+    train_batches = train_examples.map(format_image).cache().shuffle(num_examples // 4).map(eval_augmentation).batch(BATCH_SIZE).prefetch(1)
+    validation_batches = validation_examples.map(format_image).cache().batch(BATCH_SIZE).prefetch(1)
 
     image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
     image_batch = image_batch.numpy()
     label_batch = label_batch.numpy()
 
+    # #Plot some augmented images
+    # plt.figure(figsize=(10, 9))
+    # for n in range(30):
+    #     plt.subplot(6, 5, n + 1)
+    #     plt.subplots_adjust(hspace=0.3)
+    #     plt.imshow(image_batch[n])
+    #     plt.axis('off')
+    # _ = plt.suptitle("Augmented")
+    # plt.show()
 
     return train_batches, validation_batches
 
