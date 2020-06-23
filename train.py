@@ -99,5 +99,3 @@ if __name__ == '__main__':
     # start training
     set_up_train(path_model_id=path_model_id, device=device, config_names=config_names)
 
-
-
