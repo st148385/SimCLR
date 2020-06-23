@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 
 @gin.configurable
 def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_batches,
-                                             n_epochs=2, dataset_num_classes=10,
-                                             plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
+                                    n_epochs=2, dataset_num_classes=10,
+                                    plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
 
     # Tensorboard
     train_log_dir = os.path.dirname(run_paths['path_logs_train']) + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + '/train'
@@ -37,9 +37,14 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
     train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
     val_loss = tf.keras.metrics.Mean(name='val_loss')
-    val_acc = tf.keras.metrics.SparseCategoricalAccuracy(name='val_accuracy')
+    val_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='val_accuracy')
 
+    # Extras
     epoch_tf = tf.Variable(1, dtype=tf.int32)
+    list_of_train_loss = []
+    list_of_train_acc = []
+    list_of_val_loss = []
+    list_of_val_acc = []
 
     # Freeze pre-trained encoder h(•)
     simclr_encoder_h.trainable = False
@@ -67,7 +72,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
         val_loss_inStep = loss_object(labels, b)
 
         val_loss(val_loss_inStep)
-        val_acc(labels, b)
+        val_accuracy(labels, b)
 
 
     for epoch in range(0,int(n_epochs)):
@@ -79,7 +84,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
         train_loss.reset_states()
         train_accuracy.reset_states()
         val_loss.reset_states()
-        val_acc.reset_states()
+        val_accuracy.reset_states()
 
         # Train
         for image, label in train_batches:
@@ -93,14 +98,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
             validation_step(image, label)
         with val_summary_writer.as_default():
             tf.summary.scalar('loss', val_loss.result(), step=epoch)
-            tf.summary.scalar('accuracy', val_acc.result(), step=epoch)
-
-        # Print summary
-        if epoch <=0:
-                print("Summary des Encoders f(•):")
-                simclr_encoder_h.summary()
-                print(f"Summary des Dense({dataset_num_classes}):")
-                denseModel.summary()
+            tf.summary.scalar('accuracy', val_accuracy.result(), step=epoch)
 
 
         # Fetch metrics
@@ -109,26 +107,56 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
         template = 'Epoch {}, Loss: {}, Accuracy: {}, Validation_Loss: {}, Validation_Accuracy: {}'
         logging.info(template.format(epoch + 1,
                               train_loss.result(),
-                              train_accuracy.result() * 100,
+                              train_accuracy.result(),
                               val_loss.result(),
-                              val_acc.result() * 100))
+                              val_accuracy.result()))
+
+        list_of_train_loss.append(train_loss.result())
+        list_of_train_acc.append(train_accuracy.result())
+        list_of_val_loss.append(val_loss.result())
+        list_of_val_acc.append(val_accuracy.result())
 
 
-        # write config after everything has been established
-        if epoch <= 0:
-            gin_string = gin.operative_config_str()
-            logging.info(f'Fetched config parameters: {gin_string}.')
-            utils_params.save_gin(run_paths['path_gin'], gin_string)    # <path_model_id>\\config_operative.gin
+    #After Training:
 
-            # Check trainable (also visible in model summary)
-            print("simclr_encoder_h was trainable =", simclr_encoder_h.trainable, "as seen in summary above")
+    # Get config
+    gin_string = gin.operative_config_str()
+    logging.info(f'Fetched config parameters: {gin_string}.')
+    utils_params.save_gin(run_paths['path_gin_eval'], gin_string)  # <path_model_id>\\config_operative_eval.gin
 
-            # Best val_acc with corresponding epoch
-#            max_val_acc = max(val_acc)
-#            corresponding_index = 1 + val_acc.index(max_val_acc)
+    # Print summary
+    print("\nSummary des Encoders f(•):")
+    simclr_encoder_h.summary()
+    print(f"\nSummary des Dense({dataset_num_classes}):")
+    denseModel.summary()
 
-#            print(
-#                f"Best validation accuracy in {n_epochs} evaluation epochs was {max_val_acc} after epoch {corresponding_index}/{eval_epochs}")
+    # Check trainable (also visible in model summary)
+    print("simclr_encoder_h was trainable =", simclr_encoder_h.trainable, "as seen in summary above")
+
+    # Best val_acc with corresponding epoch
+    max_val_acc = max(list_of_val_acc)
+    corresponding_index = 1 + list_of_val_acc.index(max_val_acc)
+
+    print(f"Best validation accuracy in {n_epochs} evaluation epochs was {max_val_acc} after epoch {corresponding_index}/{n_epochs}")
+
+    # Plot result
+
+    epochs_range = range(n_epochs)
+
+    plt.figure(figsize=(8, 8))
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, list_of_train_acc, label='Training Accuracy')
+    plt.plot(epochs_range, list_of_val_acc, label='Validation Accuracy')
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, list_of_train_loss, label='Training Loss')
+    plt.plot(epochs_range, list_of_val_loss, label='Validation Loss')
+    plt.legend(loc='upper right')
+    plt.title('Training and Validation Loss')
+    plt.savefig(plot_folder)
+    plt.show()
 
     return 0
 
@@ -225,12 +253,18 @@ def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, va
     #Get config
     gin_string = gin.operative_config_str()
     logging.info(f'Fetched config parameters: {gin_string}.')
-    utils_params.save_gin(run_paths['path_gin_eval'], gin_string)  # <path_model_id>\\config_operative.gin
+    utils_params.save_gin(run_paths['path_gin_eval'], gin_string)  # <path_model_id>\\config_operative_eval.gin
+
 
 #@gin.configurable(blacklist=['model', 'run_paths'])
 def load_checkpoint_weights(model,
                             run_paths,
                             learning_rate=0.001):
+    ''' Expects:
+    1) model to load checkpoint into
+    2) path containing the checkpoint-files, which are ckpt-X.index, ckpt-X.data-00000-of-00002 and the file "checkpoint"
+    Does:
+    Loads checkpoint from run_paths into model '''
 
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)
