@@ -292,7 +292,7 @@ def load_checkpoint_weights(model,
     # manager automatically handles model reloading if directory contains ckpts
     ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'], #C:\Users\Mari\PycharmProjects\experiments\models\run_2020-05-14T19-00-15['path_ckpts_train']
-                                              max_to_keep=2, keep_checkpoint_every_n_hours=1)
+                                              max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt.restore(ckpt_manager.latest_checkpoint)  #Nimmt sich wohl [model_checkpoint_path: "ckpt-55"] aus dem Ordner
 
 

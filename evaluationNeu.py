@@ -39,7 +39,7 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 #main()
 if __name__ == '__main__':
     device = '0'
-    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
+    #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
     path_model_id = ''
 
     # gin config files
