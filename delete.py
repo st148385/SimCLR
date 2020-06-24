@@ -49,6 +49,7 @@ class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
         self.overallSteps = (100000//512) * 1000 +1
 
         self.warmup_steps = warmup_steps
+        self.warmup_steps = tf.math.ceil(self.overallSteps * 0.1)
 
     def __call__(self, step):
 
