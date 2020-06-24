@@ -47,7 +47,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
     list_of_val_acc = []
 
     # Freeze pre-trained encoder h(•)
-    simclr_encoder_h.trainable = False   #Additionally changes the train_step function to train_step for upperbound or simclr_eval
+    simclr_encoder_h.trainable = True   #Additionally changes the train_step function to train_step for upperbound or simclr_eval
 
     @tf.function
     def train_step_normal(images, labels):

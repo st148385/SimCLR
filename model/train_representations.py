@@ -186,6 +186,7 @@ def train(model, model_head, model_gesamt,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
+            a = 1+1
             if use_split_model == True:
                 train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
                            use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)

@@ -8,7 +8,7 @@ set_devices.soft_device_placement = False
 # Input Pipeline
 ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
 ds_num_classes = 10
-tfds_path = '~\\tensorflow_datasets'        # /data/public/tensorflow_datasets
+tfds_path = '/mnt/data/public/tensorflow_datasets'        # /data/public/tensorflow_datasets
 
 
 gen_pipeline_eval.ds_name = %ds_name
