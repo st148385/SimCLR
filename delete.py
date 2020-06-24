@@ -68,37 +68,7 @@ plt.show()
 # plt.ylabel("Learning Rate")
 # plt.xlabel("Train Step")
 # plt.show()
-#ab hier bis gelb
-# class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
-#     def __init__(self, lr_max, warmup_steps=20000):
-#         super(test_lr, self).__init__()
-#
-#         self.lr_max = lr_max * 140
-#         self.lr_max = tf.cast(self.lr_max, tf.float32)
-#
-#         self.overallSteps = (100000//512) * 1000 +1
-#
-#         self.warmup_steps = warmup_steps
-#
-#     def __call__(self, step):
-#
-#
-#         cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ( self.warmup_steps * (self.warmup_steps ** -1.5)  ) * \
-#                     (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.575*self.overallSteps) ))
-#         # 0.001*140 * (  (  (19600) * (19600 ^( -1.5) )  ) - (  (19600) * (19600 ^( -1.5) )  ) * (1-cos( (X-19600) / (0.6*196000) )  )  )
-#
-#         lin_warmup = step * (self.warmup_steps ** -1.5)
-#
-#         return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
-#         #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
-#
-#
-# teste_learning_rate_schedule = test_lr(lr_max=0.001)    #actual_lr_max ≈ +-5% * lr_max
-#
-# plt.plot(teste_learning_rate_schedule(tf.range(195000, dtype=tf.float32)))
-# plt.ylabel("Learning Rate")
-# plt.xlabel("Train Step")
-# plt.show()
+
 '''#####
 ######
 import os
