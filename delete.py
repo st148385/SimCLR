@@ -10,6 +10,36 @@ from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_b
 
 #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
 
+class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
+    def __init__(self, lr_max, warmup_steps=20000):
+        super(test_lr, self).__init__()
+
+        self.lr_max = lr_max
+        self.lr_max = tf.cast(self.lr_max, tf.float32)
+
+        self.overallSteps = (100000//512) * 100
+
+        self.warmup_steps = tf.math.ceil(self.overallSteps * 0.05)
+
+    def __call__(self, step):
+
+        #solve cos(2pi*(10*W-W) / (N) ) = 0 ,N  -> N=36
+        cos_decay =  (tf.math.cos( ( 2*pi*(step-self.warmup_steps) ) / (76*(self.warmup_steps)) ))
+
+
+        lin_warmup = step * (self.warmup_steps ** -1)
+
+        return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
+        #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
+
+
+teste_learning_rate_schedule = test_lr(lr_max=0.001)    #actual_lr_max ≈ +-5% * lr_max
+
+plt.plot(teste_learning_rate_schedule(tf.range(195*100, dtype=tf.float32)))
+plt.ylabel("Learning Rate")
+plt.xlabel("Train Step")
+plt.show()
+
 # class lr_Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 #     def __init__(self, lr_max, warmup_steps=20000):
 #         super(lr_Schedule, self).__init__()
@@ -38,37 +68,37 @@ from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_b
 # plt.ylabel("Learning Rate")
 # plt.xlabel("Train Step")
 # plt.show()
-
-class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, lr_max, warmup_steps=20000):
-        super(test_lr, self).__init__()
-
-        self.lr_max = lr_max * 140
-        self.lr_max = tf.cast(self.lr_max, tf.float32)
-
-        self.overallSteps = (100000//512) * 1000 +1
-
-        self.warmup_steps = warmup_steps
-
-    def __call__(self, step):
-
-
-        cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ( self.warmup_steps * (self.warmup_steps ** -1.5)  ) * \
-                    (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.575*self.overallSteps) ))
-        # 0.001*140 * (  (  (19600) * (19600 ^( -1.5) )  ) - (  (19600) * (19600 ^( -1.5) )  ) * (1-cos( (X-19600) / (0.6*196000) )  )  )
-
-        lin_warmup = step * (self.warmup_steps ** -1.5)
-
-        return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
-        #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
-
-
-teste_learning_rate_schedule = test_lr(lr_max=0.001)    #actual_lr_max ≈ +-5% * lr_max
-
-plt.plot(teste_learning_rate_schedule(tf.range(195000, dtype=tf.float32)))
-plt.ylabel("Learning Rate")
-plt.xlabel("Train Step")
-plt.show()
+#ab hier bis gelb
+# class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
+#     def __init__(self, lr_max, warmup_steps=20000):
+#         super(test_lr, self).__init__()
+#
+#         self.lr_max = lr_max * 140
+#         self.lr_max = tf.cast(self.lr_max, tf.float32)
+#
+#         self.overallSteps = (100000//512) * 1000 +1
+#
+#         self.warmup_steps = warmup_steps
+#
+#     def __call__(self, step):
+#
+#
+#         cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ( self.warmup_steps * (self.warmup_steps ** -1.5)  ) * \
+#                     (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.575*self.overallSteps) ))
+#         # 0.001*140 * (  (  (19600) * (19600 ^( -1.5) )  ) - (  (19600) * (19600 ^( -1.5) )  ) * (1-cos( (X-19600) / (0.6*196000) )  )  )
+#
+#         lin_warmup = step * (self.warmup_steps ** -1.5)
+#
+#         return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
+#         #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
+#
+#
+# teste_learning_rate_schedule = test_lr(lr_max=0.001)    #actual_lr_max ≈ +-5% * lr_max
+#
+# plt.plot(teste_learning_rate_schedule(tf.range(195000, dtype=tf.float32)))
+# plt.ylabel("Learning Rate")
+# plt.xlabel("Train Step")
+# plt.show()
 '''#####
 ######
 import os

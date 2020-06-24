@@ -7,6 +7,7 @@ import gin
 import sys
 from utils import utils_params
 import numpy as np
+from math import pi as pi
 cosine_sim_1d = tf.keras.losses.CosineSimilarity(axis=1, reduction=tf.keras.losses.Reduction.NONE)
 cosine_sim_2d = tf.keras.losses.CosineSimilarity(axis=2, reduction=tf.keras.losses.Reduction.NONE)
 
@@ -49,28 +50,42 @@ def get_negative_mask(batch_size):
     return tf.constant(negative_mask)
 
 
-####################################################################################
+
 class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, lr_max, warmup_steps=20000, overallSteps=194000):
+    '''
+    with self.warmup_steps = tf.math.ceil(overallSteps * 0.1):
+    warmup phase takes 10% of all training steps.
+
+    If this is unwanted, also change N by solving:
+    solve cos( 2pi*(K*Warmup-Warmup) / N ) = 0 ,N       (K is 1/warmupPercent)
+    i.e. K = 10 for 10% warmup-steps of overallSteps, K = 20 for 5% warmup-steps of overallSteps
+
+    Example: For 20% warmupSteps of overallSteps:
+    solve cos( 2pi*(5*Warmup-Warmup) / N ) = 0 ,N -> N = 16*W, so change N=16 and warmupPercent=0.2
+    For 5% warmupSteps of overallSteps:
+    solve cos( 2pi*(20*Warmup-Warmup) / N ) = 0 ,N -> N = 76*W, so change N=76 and warmupPercent=0.05
+    '''
+    def __init__(self, lr_max, overallSteps=194000):
         super(lr_schedule, self).__init__()
 
-        self.lr_max = lr_max * 140
+        self.lr_max = lr_max
         self.lr_max = tf.cast(self.lr_max, tf.float32)
 
         self.overallSteps = overallSteps
 
-        self.warmup_steps = tf.math.ceil(overallSteps * 0.1)
+        self.warmupPercent = 0.1
+        self.N = 36
+        self.warmup_steps = tf.math.ceil(self.overallSteps * self.warmupPercent)
 
 
     def __call__(self, step):
 
-        cos_decay = self.warmup_steps * (self.warmup_steps ** -1.5) - ((self.warmup_steps) * (self.warmup_steps ** -1.5)) * \
-                    (1 - tf.math.cos(((step - self.warmup_steps)) / (0.6 * self.overallSteps)))
+        cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (36 * (self.warmup_steps))))
 
-        lin_warmup = step * (self.warmup_steps ** -1.5)
+        lin_warmup = step * (self.warmup_steps ** -1)
 
         return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
-####################################################################################
+
 
 
 
@@ -111,16 +126,9 @@ def train(model, model_head, model_gesamt,
         num_examples = 2 * ds_train_info.splits['train'].num_examples   # 'mal 2' wg SimCLR
         print("num_examples: ", num_examples, "         //100.000 for cifar10")
 
-        total_steps = n_epochs * ( (num_examples // size_batch) + 1)
-        print("total_steps:", total_steps, "        //over all epochs")
+        total_steps = n_epochs * ( (num_examples // size_batch) )
+        print("total_steps:", total_steps, "        //over all epochs, so warmup should be over after step:", tf.math.ceil(total_steps * 0.1))
 
-        # Currently lr_max = f(size_batch) (it depends on batch size). TODO Maybe try to fix that later
-        if size_batch == 2048:
-            lr_max_ifScheduling/=2
-        elif size_batch == 1024:
-            lr_max_ifScheduling/=1.5
-        else:
-            lr_max_ifScheduling=lr_max_ifScheduling
 
         #optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))   #lr_schedule(lr_max=0.0001)) #tf.keras.experimental.CosineDecay(initial_learning_rate=0.1, first_decay_steps=1000))
         #optimizer_head = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))  #lr_schedule(lr_max=0.0001))

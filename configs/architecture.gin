@@ -10,7 +10,7 @@ gen_model.Architecture = @ResNet
 #gen_model.mlp_dense1 = %MLP_dense_in
 #gen_model.mlp_dense2 = %MLP_dense_out
 gen_model.num_layers = 56
-gen_model.num_inital_filters = 64 # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64
+gen_model.num_inital_filters = 4 # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64
 gen_model.shortcut_connection=True
 gen_model.weight_decay=0.0
 gen_model.batch_norm_momentum=0.99
@@ -28,7 +28,7 @@ gen_encoderModel.mlp_dense2 = %MLP_dense_out
 # Projection Head g(•)
 gen_headModel.Architecture_head = @headModel
 gen_headModel.input_size = %input_size
-gen_headModel.input_dim = 256
+gen_headModel.input_dim = 16   #initial_filters * 4
 gen_headModel.mlp_dense1 = %MLP_dense_in
 gen_headModel.mlp_dense2 = %MLP_dense_out
 
