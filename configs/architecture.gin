@@ -4,7 +4,7 @@ MLP_dense_in = 128
 MLP_dense_out = 128     # 128 nach SimCLR paper
 
 
-# Full SimCLR model h(g(•))
+# Full SimCLR model g(h(•))
 gen_model.Architecture = @ResNet
 #gen_model.input_size = %input_size
 #gen_model.mlp_dense1 = %MLP_dense_in

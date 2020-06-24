@@ -7,7 +7,7 @@ set_devices.soft_device_placement = False
 
 # Input Pipeline
 ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
-tfds_path = '/mnt/data/public/tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
+tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
 
 size_batch = 512
 dataset_image_size = 32     #Nach Augmentation haben x_i und x_j Auflösung: (image_size_dataset x image_size_dataset x 3)
@@ -24,7 +24,7 @@ gen_pipeline_train.x_size = %dataset_image_size
 plot_dataset.dataset_name = %ds_name
 
 # Training parameters
-train.n_epochs=50
+train.n_epochs=2
 train.learning_rate_noScheduling=0.001
 train.lr_max_ifScheduling=0.001
 train.save_period = 1

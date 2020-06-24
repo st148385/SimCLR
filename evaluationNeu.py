@@ -26,7 +26,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     train_batches, validation_batches = input_fn.gen_pipeline_eval()
 
     # Get already trained SimCLR model or empty model for Bounds
-    model = model_fn.gen_resnet50()
+    model = model_fn.gen_model()
+    #model = model_fn.gen_resnet50()
     restored_model = train_eval.load_checkpoint_weights(model=model, run_paths=run_paths)
 
     # Train the dense layer together with frozen SimCLR model
