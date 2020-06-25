@@ -2,15 +2,13 @@
 input_size = 32 ###     # width and height in input_shapes of both: resnet-50 and input-layers
 MLP_dense_in = 128
 MLP_dense_out = 128     # 128 nach SimCLR paper
+initial_filters = 8
+head_input_dim = 32     # 4 * initial_filters
 
-
-# Full SimCLR model g(h(•))
+# Encoder h(•) with AlexResnet
 gen_model.Architecture = @ResNet
-#gen_model.input_size = %input_size
-#gen_model.mlp_dense1 = %MLP_dense_in
-#gen_model.mlp_dense2 = %MLP_dense_out
 gen_model.num_layers = 56
-gen_model.num_inital_filters = 4 # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64
+gen_model.num_initial_filters = %initial_filters       # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64
 gen_model.shortcut_connection=True
 gen_model.weight_decay=0.0
 gen_model.batch_norm_momentum=0.99
@@ -28,7 +26,7 @@ gen_encoderModel.mlp_dense2 = %MLP_dense_out
 # Projection Head g(•)
 gen_headModel.Architecture_head = @headModel
 gen_headModel.input_size = %input_size
-gen_headModel.input_dim = 16   #initial_filters * 4
+gen_headModel.input_dim = %head_input_dim   #initial_filters * 4
 gen_headModel.mlp_dense1 = %MLP_dense_in
 gen_headModel.mlp_dense2 = %MLP_dense_out
 
@@ -38,3 +36,18 @@ gen_resnet50.architecture_custom_resnet_50 = @encoderResnet50
 gen_resnet50.input_size = %input_size
 gen_resnet50.mlp_dense1 = %MLP_dense_in
 gen_resnet50.mlp_dense2 = %MLP_dense_out
+
+
+# Full SimCLR model g(h(•)) using AlexResnet
+gen_fullModel.Architecture_fullModel = @fullModel
+gen_fullModel.num_layers = 56
+gen_fullModel.num_initial_filters = %initial_filters       # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64
+gen_fullModel.shortcut_connection=True
+gen_fullModel.weight_decay=0.0
+gen_fullModel.batch_norm_momentum=0.99
+gen_fullModel.batch_norm_epsilon=1e-3
+gen_fullModel.batch_norm_center=True
+gen_fullModel.batch_norm_scale=True
+gen_fullModel.mlp_dense1 = %MLP_dense_in
+gen_fullModel.mlp_dense2 = %MLP_dense_out
+

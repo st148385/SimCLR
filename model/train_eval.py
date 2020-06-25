@@ -188,16 +188,6 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
 
 
 
-
-
-
-
-
-
-
-
-
-
 @gin.configurable #(whitelist=[eval_epochs])
 def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, validation_batches,
                                              eval_epochs=2, dataset_num_classes=10,

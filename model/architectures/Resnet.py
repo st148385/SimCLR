@@ -12,7 +12,7 @@ class Architecture(models.Model):
 
     def __init__(self,
                  num_layers,
-                 num_inital_filters=16,
+                 num_initial_filters=16,
                  shortcut_connection=True,
                  weight_decay=2e-4,
                  batch_norm_momentum=0.99,
@@ -35,7 +35,7 @@ class Architecture(models.Model):
             raise ValueError('num_layers must be one of 20, 32, 44, 56 or 110.')
 
         self._num_layers = num_layers
-        self._num_inital_filters = num_inital_filters
+        self._num_initial_filters = num_initial_filters
         self._shortcut_connection = shortcut_connection
         self._weight_decay = weight_decay
         self._batch_norm_momentum = batch_norm_momentum
@@ -47,51 +47,44 @@ class Architecture(models.Model):
 
         self._kernel_regularizer = regularizers.l2(weight_decay)
 
-        self._init_conv = layers.Conv2D(
-            self._num_inital_filters,
-            3,
-            1,
-            'same',
-            use_bias=False,
-            kernel_regularizer=self._kernel_regularizer,
-            name='init_conv')
+        self._init_conv = layers.Conv2D(self._num_initial_filters, 3, 1, 'same', use_bias=False, kernel_regularizer=self._kernel_regularizer, name='init_conv')
 
         self._block1 = models.Sequential([ResNetUnit(
-            self._num_inital_filters,
-            1,
-            shortcut_connection,
-            True if i == 0 else False,
-            weight_decay,
-            batch_norm_momentum,
-            batch_norm_epsilon,
-            batch_norm_center,
-            batch_norm_scale,
-            'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
-            name='block1')
+                                                self._num_initial_filters,
+                                                1,
+                                                shortcut_connection,
+                                                True if i == 0 else False,
+                                                weight_decay,
+                                                batch_norm_momentum,
+                                                batch_norm_epsilon,
+                                                batch_norm_center,
+                                                batch_norm_scale,
+                                                'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
+                                                name='block1')
         self._block2 = models.Sequential([ResNetUnit(
-            self._num_inital_filters * 2,
-            2 if i == 0 else 1,
-            shortcut_connection,
-            False if i == 0 else False,
-            weight_decay,
-            batch_norm_momentum,
-            batch_norm_epsilon,
-            batch_norm_center,
-            batch_norm_scale,
-            'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
-            name='block2')
+                                                self._num_initial_filters * 2,
+                                                2 if i == 0 else 1,
+                                                shortcut_connection,
+                                                False if i == 0 else False,
+                                                weight_decay,
+                                                batch_norm_momentum,
+                                                batch_norm_epsilon,
+                                                batch_norm_center,
+                                                batch_norm_scale,
+                                                'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
+                                                name='block2')
         self._block3 = models.Sequential([ResNetUnit(
-            self._num_inital_filters * 4,
-            2 if i == 0 else 1,
-            shortcut_connection,
-            False if i == 0 else False,
-            weight_decay,
-            batch_norm_momentum,
-            batch_norm_epsilon,
-            batch_norm_center,
-            batch_norm_scale,
-            'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
-            name='block3')
+                                                self._num_initial_filters * 4,
+                                                2 if i == 0 else 1,
+                                                shortcut_connection,
+                                                False if i == 0 else False,
+                                                weight_decay,
+                                                batch_norm_momentum,
+                                                batch_norm_epsilon,
+                                                batch_norm_center,
+                                                batch_norm_scale,
+                                                'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
+                                                name='block3')
 
         # self._final_bn = layers.BatchNormalization(
         #     -1,
@@ -126,6 +119,20 @@ class Architecture(models.Model):
         net = self._block3(net)
 
         net = self._global_avg(net)
+
+        ####
+        # Hier könnte dann ein MLP rein, sodass Resnet.py als Gesamtmodel g(h(•)) verwendet werden kann (für split_model=False)
+
+        # self.mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
+        # self.mlp_relu = tf.keras.layers.Activation("relu")
+        # self.mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
+        # (...)
+        # g = self.mlp_dense_in(net)
+        # g = self.mlp_relu(net)
+        # g = self.mlp_dense_out(net)
+        # return net, g
+        ####
+
         #net = self._final_bn(net)
         #net = tf.nn.relu(net)
         #net = tf.reduce_mean(net, [1, 2], keepdims=True)
@@ -160,7 +167,7 @@ class ResNetUnit(layers.Layer):
           shortcut_from_preact: bool scalar, whether the shortcut connection starts
             from the preactivation or the input feature map.
           weight_decay: float scalar, weight for l2 regularization.
-          batch_norm_momentum: float scalar, the moving avearge decay.
+          batch_norm_momentum: float scalar, the moving average decay.
           batch_norm_epsilon: float scalar, small value to avoid divide by zero.
           batch_norm_center: bool scalar, whether to center in the batch norm.
           batch_norm_scale: bool scalar, whether to scale in the batch norm.
@@ -210,7 +217,7 @@ class ResNetUnit(layers.Layer):
           outouts: float tensor of shape [batch_size, out_height, out_width,
             out_depth], the output tensor.
         """
-        depth_in = inputs.shape[3]
+        depth_in = inputs.shape[3]      # depth_in = num_initial_filters
         depth = self._depth
         preact = tf.nn.relu(self._bn1(inputs))
 

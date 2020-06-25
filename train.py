@@ -74,7 +74,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     #encoder_h = model_fn.gen_resnet50()
     encoder_h = model_fn.gen_model()
     projectionhead_g = model_fn.gen_headModel()
-    gesamtmodel_h_g = model_fn.gen_model()
+    gesamtmodel_h_g = model_fn.gen_fullModel()
 
     train(encoder_h,
           projectionhead_g,

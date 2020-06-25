@@ -127,7 +127,7 @@ def train(model, model_head, model_gesamt,
         print("num_examples: ", num_examples, "         //100.000 for cifar10")
 
         total_steps = n_epochs * ( (num_examples // size_batch) )
-        print("total_steps:", total_steps, "        //over all epochs, so warmup should be over after step:", tf.math.ceil(total_steps * 0.1))
+        print("total_steps:", total_steps, "        //so warmup should be over after step:", tf.math.ceil(total_steps * 0.1))
 
 
         #optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))   #lr_schedule(lr_max=0.0001)) #tf.keras.experimental.CosineDecay(initial_learning_rate=0.1, first_decay_steps=1000))
@@ -151,7 +151,7 @@ def train(model, model_head, model_gesamt,
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
 
-    # Checkpoint für h!
+    # Checkpoint für h!      # Oder mit split_model = False Ceckpoint fürs Gesamtmodel g(h(•))
     ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\ckpts
                                               max_to_keep=2, keep_checkpoint_every_n_hours=None)
@@ -164,7 +164,7 @@ def train(model, model_head, model_gesamt,
         logging.info("Initializing encoder_h from scratch.")
         epoch_start = 0
 
-    # Checkpoint für z!
+    # Checkpoint für g!
     ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer_head)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
                                               max_to_keep=2, keep_checkpoint_every_n_hours=None)
@@ -194,7 +194,6 @@ def train(model, model_head, model_gesamt,
         # Train
         for image, image2, _ in ds_train:
             # Train on batch
-            a = 1+1
             if use_split_model == True:
                 train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
                            use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)

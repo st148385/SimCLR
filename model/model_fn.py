@@ -39,7 +39,7 @@ def gen_headModel(Architecture_head, **kwargs):
 
 #Erhält jetzt eine Architecture aus 'architectures', z.B. 'testModel' über architecture.gin: "gen_model.Architecture = @testModel"
 
-
+#resnet50 by calmisential, so just encoder
 @gin.configurable()
 def gen_resnet50(architecture_custom_resnet_50, input_size, mlp_dense1, mlp_dense2):
     model=architecture_custom_resnet_50()
@@ -48,6 +48,13 @@ def gen_resnet50(architecture_custom_resnet_50, input_size, mlp_dense1, mlp_dens
     return model
 
 
+#Architecture_fullModel
+@gin.configurable()
+def gen_fullModel(Architecture_fullModel, **kwargs):
+
+    model = Architecture_fullModel(**kwargs)
+
+    return model
 
 
 
