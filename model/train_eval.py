@@ -264,19 +264,23 @@ def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, va
 
 
 
-#@gin.configurable(blacklist=['model', 'run_paths'])
+@gin.configurable #(blacklist=['model', 'run_paths'])
 def load_checkpoint_weights(model,
                             run_paths,
-                            learning_rate=0.001):
+                            learning_rate=0.001,
+                            input_size=32):
     ''' Expects:
     1) model to load checkpoint into
     2) path containing the checkpoint-files, which are ckpt-X.index, ckpt-X.data-00000-of-00002 and the file "checkpoint"
-    (optionally: 3) learning_rate of Adam optimizer)
+    (optionally: 3) learning_rate of Adam optimizer as constant value or scheduling class)
     Does:
     Loads checkpoint from run_paths into model '''
 
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)
+
+    # Solve warnings (e.g. Unresolved object in checkpoint: (root).opt's state 'm' for (root).net._block1.layer-0._bn1.gamma)
+    model.build( input_shape = (None, input_size, input_size, 3) )
 
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
@@ -291,5 +295,5 @@ def load_checkpoint_weights(model,
     else:
         print("Initializing from scratch.")
 
-    return model
+    return model, optimizer
 

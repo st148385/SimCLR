@@ -2,8 +2,8 @@
 input_size = 32 ###     # width and height in input_shapes of both: resnet-50 and input-layers
 MLP_dense_in = 128
 MLP_dense_out = 128     # 128 nach SimCLR paper
-initial_filters = 8
-head_input_dim = 32     # 4 * initial_filters
+initial_filters = 32
+head_input_dim = 128     # 4 * initial_filters
 
 # Encoder h(•) with AlexResnet
 gen_model.Architecture = @ResNet

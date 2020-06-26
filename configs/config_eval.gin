@@ -14,11 +14,11 @@ tfds_path = '~\\tensorflow_datasets'        # /data/public/tensorflow_datasets
 
 gen_pipeline_eval.ds_name = %ds_name
 gen_pipeline_eval.tfds_path = %tfds_path
-gen_pipeline_eval.BATCH_SIZE = 32
+gen_pipeline_eval.BATCH_SIZE = 64
 gen_pipeline_eval.RESIZE_TO_RES = 32   #irrelevant for cifar10/100, flowers, imagenet
 gen_pipeline_eval.minCrop = 0.5
 
-n_eval_epochs = 2
+n_eval_epochs = 50
 plot_path = 'aktueller_plot.png'
 
 # Old eval

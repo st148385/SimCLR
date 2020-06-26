@@ -28,7 +28,7 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     # Get already trained SimCLR model or empty model for Bounds
     model = model_fn.gen_model()
     #model = model_fn.gen_resnet50()
-    restored_model = train_eval.load_checkpoint_weights(model=model, run_paths=run_paths)
+    restored_model, _ = train_eval.load_checkpoint_weights(model=model, run_paths=run_paths)
 
     # Train the dense layer together with frozen SimCLR model
     train_eval.custom_train_evaluation_network(simclr_encoder_h=restored_model, train_batches=train_batches,
@@ -41,7 +41,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 if __name__ == '__main__':
     device = '0'
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
-    path_model_id = ''
+    #path_model_id = ''
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\newCustomResnet_1000ep_512bs_32filter_0.1tau_0.001lrmax'
 
     # gin config files
     config_names = ['config_eval.gin', 'architecture.gin']
