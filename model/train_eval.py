@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 @gin.configurable
 def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_batches,
-                                    n_epochs=2, dataset_num_classes=10,
+                                    encoder_trainable, n_epochs=2, dataset_num_classes=10,
                                     plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
 
     # Tensorboard
@@ -47,7 +47,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
     list_of_val_acc = []
 
     # Freeze pre-trained encoder h(•)
-    simclr_encoder_h.trainable = True   #Additionally changes the train_step function to train_step for upperbound or simclr_eval
+    simclr_encoder_h.trainable = encoder_trainable   #Additionally changes the train_step function to train_step for upperbound or simclr_eval
 
     @tf.function
     def train_step_normal(images, labels):

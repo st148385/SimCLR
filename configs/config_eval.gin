@@ -8,6 +8,7 @@ set_devices.soft_device_placement = False
 # Input Pipeline
 ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
 ds_num_classes = 10
+encoder_trainable = False
 tfds_path = '~\\tensorflow_datasets'        # /data/public/tensorflow_datasets
 
 
@@ -29,3 +30,4 @@ train_evaluation_network_and_plot_result.plot_folder = %plot_path              #
 custom_train_evaluation_network.n_epochs = %n_eval_epochs
 custom_train_evaluation_network.dataset_num_classes = %ds_num_classes
 custom_train_evaluation_network.plot_folder = %plot_path
+custom_train_evaluation_network.encoder_trainable = %encoder_trainable
