@@ -188,7 +188,7 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
 
 
 
-@gin.configurable #(whitelist=[eval_epochs])
+@gin.configurable
 def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, validation_batches,
                                              eval_epochs=2, dataset_num_classes=10,
                                              plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
@@ -269,12 +269,12 @@ def load_checkpoint_weights(model,
                             run_paths,
                             learning_rate=0.001,
                             input_size=32):
-    ''' Expects:
+    """ Expects:
     1) model to load checkpoint into
     2) path containing the checkpoint-files, which are ckpt-X.index, ckpt-X.data-00000-of-00002 and the file "checkpoint"
-    (optionally: 3) learning_rate of Adam optimizer as constant value or scheduling class)
+    optionally: 3) learning_rate of Adam optimizer as constant value or scheduling class
     Does:
-    Loads checkpoint from run_paths into model '''
+    Loads checkpoint from run_paths into model """
 
     # Define optimizer
     optimizer = ks.optimizers.Adam(learning_rate=learning_rate)

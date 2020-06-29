@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 from math import pi as pi
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
+import tensorflow as tf
+strategy = tf.distribute.MirroredStrategy()
+print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+
 #Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
 
 class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):

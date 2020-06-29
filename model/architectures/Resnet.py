@@ -47,7 +47,8 @@ class Architecture(models.Model):
 
         self._kernel_regularizer = regularizers.l2(weight_decay)
 
-        self._init_conv = layers.Conv2D(self._num_initial_filters, 3, 1, 'same', use_bias=False, kernel_regularizer=self._kernel_regularizer, name='init_conv')
+        self._init_conv = layers.Conv2D(self._num_initial_filters, 3, 1, 'same', use_bias=False,
+                                        kernel_regularizer=self._kernel_regularizer, name='init_conv')
 
         self._block1 = models.Sequential([ResNetUnit(
                                                 self._num_initial_filters,
@@ -119,7 +120,7 @@ class Architecture(models.Model):
         net = self._block3(net)
 
         net = self._global_avg(net)
-
+        
         ####
         # Hier könnte dann ein MLP rein, sodass Resnet.py als Gesamtmodel g(h(•)) verwendet werden kann (für split_model=False)
 
@@ -207,6 +208,9 @@ class ResNetUnit(layers.Layer):
                                     use_bias=False,
                                     kernel_regularizer=self._kernel_regularizer,
                                     name='conv2')
+
+        # "We adopt batchnormalization (BN) [16] right after each convolution and before activation"
+        # => Relu ("activation") is in call below
 
     def call(self, inputs):
         """Execute the forward pass.

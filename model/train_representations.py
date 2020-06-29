@@ -12,6 +12,7 @@ from math import pi as pi
 cosine_sim_1d = tf.keras.losses.CosineSimilarity(axis=1, reduction=tf.keras.losses.Reduction.NONE)
 cosine_sim_2d = tf.keras.losses.CosineSimilarity(axis=2, reduction=tf.keras.losses.Reduction.NONE)
 
+
 def _cosine_simililarity_dim1(x, y):
     v = cosine_sim_1d(x, y)
     return v
@@ -40,6 +41,7 @@ def _dot_simililarity_dim2(x, y):
     # v shape: (N, 2N)
     return v
 
+
 def get_negative_mask(batch_size):
     # return a mask that removes the similarity score of equal/similar images.
     # this function ensures that only distinct pair of images get their similarity scores
@@ -51,9 +53,8 @@ def get_negative_mask(batch_size):
     return tf.constant(negative_mask)
 
 
-
 class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    '''
+    """
     with self.warmup_steps = tf.math.ceil(overallSteps * 0.1):
     warmup phase takes 10% of all training steps.
 
@@ -65,7 +66,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     solve cos( 2pi*(5*Warmup-Warmup) / N ) = 0 ,N -> N = 16*W, so change N=16 and warmupPercent=0.2
     For 5% warmupSteps of overallSteps:
     solve cos( 2pi*(20*Warmup-Warmup) / N ) = 0 ,N -> N = 76*W, so change N=76 and warmupPercent=0.05
-    '''
+    """
     def __init__(self, lr_max, overallSteps):
         super(lr_schedule, self).__init__()
 
@@ -78,10 +79,9 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         self.N = 36
         self.warmup_steps = math.ceil(self.overallSteps * self.warmupPercent)
 
-
     def __call__(self, step):
 
-        cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (36 * (self.warmup_steps))))
+        cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (self.N * (self.warmup_steps))))
 
         lin_warmup = step * (self.warmup_steps ** -1)
 
@@ -90,8 +90,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 
 
-
-@gin.configurable(blacklist=['model','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
+@gin.configurable(blacklist=['model','model_head','model_gesamt','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
 def train(model, model_head, model_gesamt,
           ds_train,
           ds_train_info,
@@ -105,18 +104,19 @@ def train(model, model_head, model_gesamt,
           use_2optimizers=True,
           use_split_model=True,
           use_learning_rate_scheduling=True):
-    '''Pass both parts of split model and the overall model (all 3 models), so we can use the parameter "use_split_model"!'''
+    """Executes the Training Loop of SimCLR. So it trains the simclr's encoder h(•) and projection head g(•).
+    Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
+
+    Pass both parts of split model and the overall model (all 3 models), so parameter "use_split_model" can be used.
+    """
+
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
         model = model_gesamt
 
     # Generate summary writer
-    writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))   # <path_model_id>\\logs\\run.log
+    writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")  # <path_model_id>\\logs\\run.log
-
-#possibilities: a) learning_rate = Klasse aus tf.keras.optimizers.schedules.LearningRateSchedule
-#b) learning_rate = tf.keras.experimental.CosineDecayRestarts #Ist wie im "Hutter"-paper mit mult=2
-#c) Verwendung eines anderen optimizers: tfa.optimizers.RectifiedAdam(lr=1e-3, total_steps=10000, warmup_proportion=0.1, min_lr=1e-5)
 
 
     # Define optimizer
@@ -131,29 +131,19 @@ def train(model, model_head, model_gesamt,
         print("total_steps:", total_steps, "        //so warmup should be over after step:", math.ceil(total_steps * 0.1))
 
 
-        #optimizer = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))   #lr_schedule(lr_max=0.0001)) #tf.keras.experimental.CosineDecay(initial_learning_rate=0.1, first_decay_steps=1000))
-        #optimizer_head = ks.optimizers.Adam(learning_rate=lr_scheduling_class(256))  #lr_schedule(lr_max=0.0001))
-
         optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps))
         optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps))
 
-        # optimizer = ks.optimizers.Adam(learning_rate=learning_rate_schedule())
-
-        # optimizer = tfa.optimizers.RectifiedAdam(learning_rate=(tf.keras.experimental.LinearCosineDecay(0.001, total_steps-total_steps/0.1)),
-        #                                          total_steps=total_steps, warmup_proportion=0.1, min_lr=0)
-        # optimizer_head = tfa.optimizers.RectifiedAdam(learning_rate=(tf.keras.experimental.LinearCosineDecay(0.001, total_steps-total_steps/0.1)),
-        #                                          total_steps=total_steps, warmup_proportion=0.1, min_lr=0)
-
     else:
         print("Continues WITHOUT using learning rate scheduling!")
-        optimizer = ks.optimizers.Adam(learning_rate=learning_rate_noScheduling) #used for both: resnetModel (use_split_model=false) and encoderModel (use_split_model=True)
+        optimizer = ks.optimizers.Adam(learning_rate=learning_rate_noScheduling)  #used for both: resnetModel (use_split_model=false) and encoderModel (use_split_model=True)
         optimizer_head = ks.optimizers.Adam(learning_rate=learning_rate_noScheduling)
 
     # Define checkpoints and checkpoint manager
     # manager automatically handles model reloading if directory contains ckpts
 
-    # Checkpoint für h!      # Oder mit split_model = False Ceckpoint fürs Gesamtmodel g(h(•))
-    ckpt = tf.train.Checkpoint(net=model,opt=optimizer)
+    # Checkpoint für h!     # Oder mit split_model = False Ceckpoint fürs Gesamtmodel g(h(•))
+    ckpt = tf.train.Checkpoint(net=model, opt=optimizer)
     ckpt_manager = tf.train.CheckpointManager(ckpt, directory=run_paths['path_ckpts_train'],    # <path_model_id>\\ckpts
                                               max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt.restore(ckpt_manager.latest_checkpoint)
@@ -166,9 +156,9 @@ def train(model, model_head, model_gesamt,
         epoch_start = 0
 
     # Checkpoint für g!
-    ckpt_head = tf.train.Checkpoint(net=model_head,opt=optimizer_head)
+    ckpt_head = tf.train.Checkpoint(net=model_head, opt=optimizer_head)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
-                                              max_to_keep=2, keep_checkpoint_every_n_hours=None)
+                                                   max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
 
     if ckpt_manager_head.latest_checkpoint:
@@ -187,7 +177,7 @@ def train(model, model_head, model_gesamt,
     # if using normal range (instead of tf.range) assign a epoch_tf tensor, otherwise function gets recreated every turn
     epoch_tf = tf.Variable(1, dtype=tf.int32)
 
-    for epoch in range(epoch_start,int(n_epochs)):
+    for epoch in range(epoch_start, int(n_epochs)):
         # assign tf variable, graph build doesn't get triggered again
         epoch_tf.assign(epoch)
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
@@ -197,7 +187,8 @@ def train(model, model_head, model_gesamt,
             # Train on batch
             if use_split_model == True:
                 train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
-                           use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
+                           use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
+                           use_lrScheduling=use_learning_rate_scheduling)
             else:
                 train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
         # Print summary
@@ -241,11 +232,9 @@ def train(model, model_head, model_gesamt,
     return 0
 
 
-
 @tf.function
 def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau, use_lrScheduling):
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
-
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
@@ -342,6 +331,7 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
             loss = loss / (2 * batch_size)
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
+
 
         #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
 
