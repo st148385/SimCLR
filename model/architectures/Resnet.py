@@ -103,6 +103,7 @@ class Architecture(models.Model):
         #     kernel_regularizer=self._kernel_regularizer,
         #     name='final_conv')
         self._global_avg = tf.keras.layers.GlobalAveragePooling2D()
+        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters)
 
     def call(self, inputs):
         """Execute the forward pass.
@@ -120,19 +121,9 @@ class Architecture(models.Model):
         net = self._block3(net)
 
         net = self._global_avg(net)
-        
-        ####
-        # Hier könnte dann ein MLP rein, sodass Resnet.py als Gesamtmodel g(h(•)) verwendet werden kann (für split_model=False)
 
-        # self.mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
-        # self.mlp_relu = tf.keras.layers.Activation("relu")
-        # self.mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
-        # (...)
-        # g = self.mlp_dense_in(net)
-        # g = self.mlp_relu(net)
-        # g = self.mlp_dense_out(net)
-        # return net, g
-        ####
+        net = self._simclrv2_dense(net)
+
 
         #net = self._final_bn(net)
         #net = tf.nn.relu(net)

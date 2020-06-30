@@ -89,10 +89,11 @@ class Architecture_fullModel(models.Model):
                                                 'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
                                                 name='block3')
 
-        self.mlp_input = tf.keras.Input(4 * self._num_initial_filters)
-        self.mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
-        self.mlp_relu = tf.keras.layers.Activation("relu")
-        self.mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
+        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters)
+
+        self._mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
+        self._mlp_relu = tf.keras.layers.Activation("relu")
+        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
 
         # self._final_bn = layers.BatchNormalization(
         #     -1,
@@ -128,10 +129,13 @@ class Architecture_fullModel(models.Model):
 
         h = self._global_avg(net)
 
-        #g = self.mlp_input(h)
-        g = self.mlp_dense_in(h)
-        g = self.mlp_relu(g)
-        g = self.mlp_dense_out(g)
+        #For simclr v2:
+        h = self._simclrv2_dense(h)
+
+        #General projection head:
+        g = self._mlp_dense_in(h)
+        g = self._mlp_relu(g)
+        g = self._mlp_dense_out(g)
 
 
         #net = self._final_bn(net)
