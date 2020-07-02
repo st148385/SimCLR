@@ -12,7 +12,25 @@ import tensorflow as tf
 strategy = tf.distribute.MirroredStrategy()
 print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
-#Da \ schon Leerzeichen bedeuet, muss für Windows "\\" verwendet werden, um ein einzelnes "\" zu schreiben.
+"""
+Notizen zu - in SimCLR paper - verwendetem Projection Head:
+
+    elif FLAGS.proj_head_mode == 'nonlinear':                          #nonlinear is what we use
+       for j in range(FLAGS.num_proj_layers):                          #FLAGS.num_proj_layers = 3 for SimCLRv2
+         if j != FLAGS.num_proj_layers - 1:                            #If j is NOT the final dense-layer: Do ...
+           # for the middle layers, use bias and relu for the output.
+           dim, bias_relu = mid_dim, True                              #All dense-layers BUT the final one, use relu with bias
+         else:
+           # for the final layer, neither bias nor relu is used.       #Just for the final dense-layer: 
+           dim, bias_relu = FLAGS.proj_out_dim, False                  #  Don't use batch norm or relu-activation
+         hiddens = linear_layer(
+             hiddens, is_training, dim,                                #All linear_layers (which are the 3 or 2 Dense-Layers of g(•)) use "dim"
+             use_bias=bias_relu, use_bn=True, name='nl_%d'%j)          #as their number of neurons. Due to the flag FLAGS.proj_out_dim=128 
+         hiddens = tf.nn.relu(hiddens) if bias_relu else hiddens       #every single one of the dense-layers have 128 neurons on Google's github.
+         hiddens_list.append(hiddens)
+"""
+
+
 
 class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, lr_max, warmup_steps=20000):
@@ -44,34 +62,6 @@ plt.ylabel("Learning Rate")
 plt.xlabel("Train Step")
 plt.show()
 
-# class lr_Schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-#     def __init__(self, lr_max, warmup_steps=20000):
-#         super(lr_Schedule, self).__init__()
-#
-#         self.lr_max = lr_max * 90
-#         self.lr_max = tf.cast(self.lr_max, tf.float32)
-#
-#         self.warmup_steps = warmup_steps
-#
-#     def __call__(self, step):
-#
-#
-#         #arg1 = tf.math.rsqrt(step)
-#         cos_decay = (  (step[self.warmup_steps]) * (self.warmup_steps ** -1.5)  ) - (  (step[self.warmup_steps]) * (self.warmup_steps ** -1.5)  ) * \
-#                     (1-tf.math.cos( ( (step-self.warmup_steps)   ) / (0.55*len(step)) ))
-#
-#         lin_warmup = step * (self.warmup_steps ** -1.5)
-#
-#         return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
-#         #return tf.math.rsqrt(self.d_model) * tf.math.minimum(cos_decay, lin_warmup)
-#
-#
-# teste_learning_rate_schedule = lr_Schedule(lr_max=0.0001)    #actual_lr_max ≈ lr_max
-#
-# plt.plot(teste_learning_rate_schedule(tf.range(195000, dtype=tf.float32)))
-# plt.ylabel("Learning Rate")
-# plt.xlabel("Train Step")
-# plt.show()
 
 '''#####
 ######

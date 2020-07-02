@@ -8,8 +8,9 @@ set_devices.soft_device_placement = False
 # Input Pipeline
 ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
 ds_num_classes = 10
-encoder_trainable = False
 tfds_path = '~\\tensorflow_datasets'        # /data/public/tensorflow_datasets
+
+encoder_trainable = False           #False: SimCLR training or lower Bound || True: upper Bound
 
 
 gen_pipeline_eval.ds_name = %ds_name

@@ -1,11 +1,11 @@
 # Network architecture
 input_size = 32 ###     # width and height in input_shapes of both: resnet-50 and input-layers
 MLP_dense_in = 128
-MLP_dense_out = 128     # 128 nach SimCLR paper
+MLP_dense_out = 128     # 128 nach SimCLR paper     #Update: every single one of the dense-layers (3 or 2 depending on version) have 128 neurons on Google's github.
 initial_filters = 8
 head_input_dim = 32     # 4 * initial_filters
 
-# Encoder h(•) with AlexResnet
+# Encoder h(•) using custom Resnet
 gen_model.Architecture = @ResNet
 gen_model.num_layers = 56
 gen_model.num_initial_filters = %initial_filters       # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64
@@ -17,7 +17,7 @@ gen_model.batch_norm_center=True
 gen_model.batch_norm_scale=True
 
 
-# Encoder h(•)
+# Encoder h(•) using tf.keras.applications.ResNet50
 gen_encoderModel.Architecture_encoder = @encoderModel
 gen_encoderModel.input_size = %input_size
 gen_encoderModel.mlp_dense1 = %MLP_dense_in
@@ -31,14 +31,7 @@ gen_headModel.mlp_dense1 = %MLP_dense_in
 gen_headModel.mlp_dense2 = %MLP_dense_out
 
 
-# Encoder h(•) with custom resnet50
-gen_resnet50.architecture_custom_resnet_50 = @encoderResnet50
-gen_resnet50.input_size = %input_size
-gen_resnet50.mlp_dense1 = %MLP_dense_in
-gen_resnet50.mlp_dense2 = %MLP_dense_out
-
-
-# Full SimCLR model g(h(•)) using AlexResnet
+# Full SimCLR model g(h(•)) using custom Resnet
 gen_fullModel.Architecture_fullModel = @fullModel
 gen_fullModel.num_layers = 56
 gen_fullModel.num_initial_filters = %initial_filters       # 16 will lead to feature dim after glb avg of 16 * 2^2 = 64

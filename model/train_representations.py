@@ -223,6 +223,7 @@ def train(model, model_head, model_gesamt,
         if epoch % save_period == 0:
             logging.info(f'Saving checkpoint to {run_paths["path_ckpts_projectionhead"]}.')
             ckpt_manager_head.save(checkpoint_number=epoch)
+
         # write config after everything has been established
         if epoch <= 0:
             gin_string = gin.operative_config_str()

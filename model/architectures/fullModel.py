@@ -89,12 +89,6 @@ class Architecture_fullModel(models.Model):
                                                 'res_net_unit_%d' % (i + 1)) for i in range(self._num_units)],
                                                 name='block3')
 
-        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters)
-
-        self._mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
-        self._mlp_relu = tf.keras.layers.Activation("relu")
-        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
-
         # self._final_bn = layers.BatchNormalization(
         #     -1,
         #     batch_norm_momentum,
@@ -111,6 +105,17 @@ class Architecture_fullModel(models.Model):
         #     kernel_regularizer=self._kernel_regularizer,
         #     name='final_conv')
         self._global_avg = tf.keras.layers.GlobalAveragePooling2D()
+
+        #SimCLRv2
+        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters)
+        self._simclrv2_relu = tf.keras.layers.Activation("relu")
+        self._simclrv2_bn = tf.keras.layers.BatchNormalization()
+
+        #SimCLRv1 Projection Head
+        self._mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
+        self._mlp_relu = tf.keras.layers.Activation("relu")
+        self._mlp_bn = tf.keras.layers.BatchNormalization()
+        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
 
     def call(self, inputs):
         """Execute the forward pass.
@@ -131,10 +136,13 @@ class Architecture_fullModel(models.Model):
 
         #For simclr v2:
         h = self._simclrv2_dense(h)
+        h = self._simclrv2_relu(h)
+        h = self._simclrv2_bn(h)
 
-        #General projection head:
+        #simclr v1 projection head:
         g = self._mlp_dense_in(h)
         g = self._mlp_relu(g)
+        g = self._mlp_bn(g)
         g = self._mlp_dense_out(g)
 
 

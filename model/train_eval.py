@@ -161,7 +161,6 @@ def custom_train_evaluation_network(simclr_encoder_h, train_batches, validation_
     print(f"Best validation accuracy in {n_epochs} evaluation epochs was {max_val_acc} after epoch {corresponding_index}/{n_epochs}")
 
     # Plot result
-
     epochs_range = range(n_epochs)
 
     plt.figure(figsize=(8, 8))
