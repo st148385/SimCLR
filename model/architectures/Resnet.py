@@ -102,10 +102,10 @@ class Architecture(models.Model):
         #     use_bias=True,
         #     kernel_regularizer=self._kernel_regularizer,
         #     name='final_conv')
-        self._global_avg = tf.keras.layers.GlobalAveragePooling2D()
-        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters)
-        self._simclrv2_relu = tf.keras.layers.Activation("relu")
-        self._simclrv2_bn = tf.keras.layers.BatchNormalization()
+        self._global_avg = tf.keras.layers.GlobalAveragePooling2D(name="GlobalAveragePooling")
+        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters, name="simclrv2_Dense")     #TODO 128 flat is better probably
+        self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
+        self._simclrv2_bn = tf.keras.layers.BatchNormalization(name="BN_of_simclrv2_Dense")
 
     def call(self, inputs):
         """Execute the forward pass.

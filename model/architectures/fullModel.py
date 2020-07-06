@@ -104,18 +104,18 @@ class Architecture_fullModel(models.Model):
         #     use_bias=True,
         #     kernel_regularizer=self._kernel_regularizer,
         #     name='final_conv')
-        self._global_avg = tf.keras.layers.GlobalAveragePooling2D()
+        self._global_avg = tf.keras.layers.GlobalAveragePooling2D(name="GlobalAvgPooling")
 
         #SimCLRv2
-        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters)
-        self._simclrv2_relu = tf.keras.layers.Activation("relu")
-        self._simclrv2_bn = tf.keras.layers.BatchNormalization()
+        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters, name="simclrv2_Dense")     #TODO 128 flat is better probably
+        self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
+        self._simclrv2_bn = tf.keras.layers.BatchNormalization(name="BN_of_simclrv2_Dense")
 
         #SimCLRv1 Projection Head
-        self._mlp_dense_in = tf.keras.layers.Dense(mlp_dense1)
-        self._mlp_relu = tf.keras.layers.Activation("relu")
-        self._mlp_bn = tf.keras.layers.BatchNormalization()
-        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2)
+        self._mlp_dense_in = tf.keras.layers.Dense(mlp_dense1, name="Head_Dense1")
+        self._mlp_relu = tf.keras.layers.Activation("relu", name="relu_of_Head_Dense1")
+        self._mlp_bn = tf.keras.layers.BatchNormalization(name="BN_of_Head_Dense1")
+        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2, name="Head_Dense2")
 
     def call(self, inputs):
         """Execute the forward pass.

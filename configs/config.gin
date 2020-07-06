@@ -6,7 +6,7 @@ set_devices.num_cpu_threads = %num_cpu_threads
 set_devices.soft_device_placement = False
 
 # Input Pipeline
-ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Mari\tensorflow_datasets
+ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'       #Speichert in C:\Users\Name\tensorflow_datasets
 tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
 
 size_batch = 512
@@ -30,6 +30,6 @@ train.lr_max_ifScheduling=0.001
 train.save_period = 1
 train.size_batch = %size_batch
 train.tau = 0.1
-train.use_split_model = True     #23.5.2020: Es klappen folgende Mögl. (mit summary-Anzeige): (False, True) || (False, False) || (True, False) || (True, True)
+train.use_split_model = True
 train.use_2optimizers = False
-train.use_learning_rate_scheduling = True  #falsefalse,falsetrue,truefalse,truetrue
+train.use_learning_rate_scheduling = True

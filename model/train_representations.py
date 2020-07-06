@@ -118,7 +118,6 @@ def train(model, model_head, model_gesamt,
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
     logging.info(f"Saving log to {os.path.dirname(run_paths['path_logs_train'])}")  # <path_model_id>\\logs\\run.log
 
-
     # Define optimizer
     if use_learning_rate_scheduling == True:
 
