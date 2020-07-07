@@ -1,9 +1,10 @@
 # Network architecture
 input_size = 32 ###     # width and height in input_shapes of both: resnet-50 and input-layers
+SimCLRv2_dense = 128
 MLP_dense_in = 128
 MLP_dense_out = 128     # 128 nach SimCLR paper     #Update: every single one of the dense-layers (3 or 2 depending on version) have 128 neurons on Google's github.
 initial_filters = 8
-head_input_dim = 32     # 4 * initial_filters
+head_input_dim = 128     # 4 * initial_filters or SimCLRv2_dense if SimCLRv2 is used
 
 # Encoder h(•) using custom Resnet
 gen_model.Architecture = @ResNet
@@ -15,6 +16,7 @@ gen_model.batch_norm_momentum=0.99
 gen_model.batch_norm_epsilon=1e-3
 gen_model.batch_norm_center=True
 gen_model.batch_norm_scale=True
+gen_model.SimCLRv2_dense = %SimCLRv2_dense
 
 
 # Encoder h(•) using tf.keras.applications.ResNet50
@@ -25,7 +27,6 @@ gen_encoderModel.mlp_dense2 = %MLP_dense_out
 
 # Projection Head g(•)
 gen_headModel.Architecture_head = @headModel
-gen_headModel.input_size = %input_size
 gen_headModel.input_dim = %head_input_dim   #initial_filters * 4
 gen_headModel.mlp_dense1 = %MLP_dense_in
 gen_headModel.mlp_dense2 = %MLP_dense_out
@@ -43,4 +44,4 @@ gen_fullModel.batch_norm_center=True
 gen_fullModel.batch_norm_scale=True
 gen_fullModel.mlp_dense1 = %MLP_dense_in
 gen_fullModel.mlp_dense2 = %MLP_dense_out
-
+gen_fullModel.SimCLRv2_dense = %SimCLRv2_dense

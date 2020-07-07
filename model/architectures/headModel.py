@@ -4,9 +4,9 @@ import gin
 
 #Unterer Teil des Models , also projection head g(•) unter Verwendung von resnet-50
 @gin.configurable('headModel')
-def Architecture_head(input_size=32, mlp_dense1=512, mlp_dense2=128, input_dim=128):
+def Architecture_head(mlp_dense1=512, mlp_dense2=128, input_dim=128):
 
-    inputs=tf.keras.Input(input_size, name="projection_head_input")
+    inputs=tf.keras.Input(input_dim, name="projection_head_input")
 
     g_a = tf.keras.layers.Dense(mlp_dense1, use_bias=True, name="Head_Dense1")(inputs)
     g_a = tf.keras.layers.Activation("relu", name="relu_of_Head_Dense1")(g_a)

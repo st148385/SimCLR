@@ -18,7 +18,8 @@ class Architecture(models.Model):
                  batch_norm_momentum=0.99,
                  batch_norm_epsilon=1e-3,
                  batch_norm_center=True,
-                 batch_norm_scale=True):
+                 batch_norm_scale=True,
+                 SimCLRv2_dense=128):
         """Constructor.
         Args:
           num_layers: int scalar, num of layers.
@@ -42,6 +43,7 @@ class Architecture(models.Model):
         self._batch_norm_epsilon = batch_norm_epsilon
         self._batch_norm_center = batch_norm_center
         self._batch_norm_scale = batch_norm_scale
+        self._num_neurons_simclrv2_dense = SimCLRv2_dense
 
         self._num_units = (num_layers - 2) // 6
 
@@ -103,7 +105,7 @@ class Architecture(models.Model):
         #     kernel_regularizer=self._kernel_regularizer,
         #     name='final_conv')
         self._global_avg = tf.keras.layers.GlobalAveragePooling2D(name="GlobalAveragePooling")
-        self._simclrv2_dense = tf.keras.layers.Dense(4 * self._num_initial_filters, name="simclrv2_Dense")     #TODO 128 flat is better probably
+        self._simclrv2_dense = tf.keras.layers.Dense(self._num_neurons_simclrv2_dense, name="simclrv2_Dense")
         self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
         self._simclrv2_bn = tf.keras.layers.BatchNormalization(name="BN_of_simclrv2_Dense")
 
