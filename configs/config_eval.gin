@@ -10,9 +10,9 @@ ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'
 ds_num_classes = 10
 tfds_path = '~\\tensorflow_datasets'        # /data/public/tensorflow_datasets
 
-encoder_trainable = False           #False: SimCLR training or lower Bound || True: upper Bound
+encoder_trainable = True           #False: SimCLR training or lower Bound || True: upper Bound
 
-
+# linear evaluation pipeline
 gen_pipeline_eval.ds_name = %ds_name
 gen_pipeline_eval.tfds_path = %tfds_path
 gen_pipeline_eval.BATCH_SIZE = 64
@@ -32,3 +32,11 @@ custom_train_evaluation_network.n_epochs = %n_eval_epochs
 custom_train_evaluation_network.dataset_num_classes = %ds_num_classes
 custom_train_evaluation_network.plot_folder = %plot_path
 custom_train_evaluation_network.encoder_trainable = %encoder_trainable
+
+# semi-supervised learning pipeline
+gen_pipeline_ssl_eval.ds_name = %ds_name
+gen_pipeline_ssl_eval.tfds_path = %tfds_path
+gen_pipeline_ssl_eval.BATCH_SIZE = 64
+gen_pipeline_ssl_eval.RESIZE_TO_RES = 32   #irrelevant for cifar10/100, flowers, imagenet
+gen_pipeline_ssl_eval.minCrop = 0.5
+gen_pipeline_ssl_eval.useNpercentOfCifar10 = 5

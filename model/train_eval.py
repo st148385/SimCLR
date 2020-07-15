@@ -192,8 +192,6 @@ def train_evaluation_network_and_plot_result(simclr_encoder_h, train_batches, va
                                              eval_epochs=2, dataset_num_classes=10,
                                              plot_folder='E:\\Mari\\Texte\\DL\\SimCLR_ckpts\\Plots\\plotname', run_paths='~/experiments'):
 
-
-
     #Freeze pre-trained encoder h(•)
     simclr_encoder_h.trainable = False
 

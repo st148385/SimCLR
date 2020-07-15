@@ -21,15 +21,15 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
     utils_devices.set_devices(device)
 
     # evaluation pipeline:
-    train_batches, validation_batches = input_fn.gen_pipeline_eval()
+    train_batches, test_batches = input_fn.gen_pipeline_ssl_eval()
 
     # Get already trained SimCLR model or empty model for Bounds
     model = model_fn.gen_model()
     restored_model, _ = train_eval.load_checkpoint_weights(model=model, run_paths=run_paths)
 
-    # Train the dense layer together with frozen SimCLR model and plot result
+    # Take the already trained (in an unsupervised way) SimCLR model and train it semi-supervised
     train_eval.custom_train_evaluation_network(simclr_encoder_h=restored_model, train_batches=train_batches,
-                                               validation_batches=validation_batches, run_paths=run_paths)
+                                               validation_batches=test_batches, run_paths=run_paths)
 
 
 
@@ -46,3 +46,5 @@ if __name__ == '__main__':
 
     # start training
     evaluation_train(path_model_id=path_model_id, device=device, config_names=config_names)
+
+

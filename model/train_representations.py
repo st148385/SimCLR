@@ -238,7 +238,7 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
-            h_i = model(image, training=True)          # 'gen_model_encoder' returns 'tf.keras.Model(inputs=inputs, outputs=[h_a, z_a])'
+            h_i = model(image, training=True)
             z_i = model_head(h_i, training=True)
             h_j = model(image2, training=True)
             z_j = model_head(h_j, training=True)

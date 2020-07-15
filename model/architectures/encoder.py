@@ -8,7 +8,7 @@ from tensorflow.keras import models
 @gin.configurable('ResNet')
 class Architecture(models.Model):
     """ResNet for CIFAR10 dataset."""
-    " Adapted from: https: // github.com / chao - ji / tf - resnet - cifar10 / blob / master / v2 / model.py"
+    "Adapted from: https://github.com/chao-ji/tf-resnet-cifar10/blob/master/v2/model.py"
 
     def __init__(self,
                  num_layers,
@@ -106,8 +106,8 @@ class Architecture(models.Model):
         #     name='final_conv')
         self._global_avg = tf.keras.layers.GlobalAveragePooling2D(name="GlobalAveragePooling")
         self._simclrv2_dense = tf.keras.layers.Dense(self._num_neurons_simclrv2_dense, name="simclrv2_Dense")
-        self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
         self._simclrv2_bn = tf.keras.layers.BatchNormalization(name="BN_of_simclrv2_Dense")
+        self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
 
     def call(self, inputs):
         """Execute the forward pass.
@@ -127,8 +127,8 @@ class Architecture(models.Model):
         net = self._global_avg(net)
 
         net = self._simclrv2_dense(net)
-        net = self._simclrv2_relu(net)
         net = self._simclrv2_bn(net)
+        net = self._simclrv2_relu(net)
 
         #net = self._final_bn(net)
         #net = tf.nn.relu(net)

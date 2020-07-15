@@ -110,14 +110,14 @@ class Architecture_fullModel(models.Model):
 
         #SimCLRv2
         self._simclrv2_dense = tf.keras.layers.Dense(self._num_neurons_simclrv2_dense, name="simclrv2_Dense")
-        self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
         self._simclrv2_bn = tf.keras.layers.BatchNormalization(name="BN_of_simclrv2_Dense")
+        self._simclrv2_relu = tf.keras.layers.Activation("relu", name="relu_of_simclrv2_Dense")
 
         #SimCLRv1 Projection Head
         self._mlp_dense_in = tf.keras.layers.Dense(mlp_dense1, name="Head_Dense1")
-        self._mlp_relu = tf.keras.layers.Activation("relu", name="relu_of_Head_Dense1")
         self._mlp_bn = tf.keras.layers.BatchNormalization(name="BN_of_Head_Dense1")
-        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2, name="Head_Dense2")
+        self._mlp_relu = tf.keras.layers.Activation("relu", name="relu_of_Head_Dense1")
+        self._mlp_dense_out = tf.keras.layers.Dense(mlp_dense2, use_bias=False, name="Head_Dense2")
 
     def call(self, inputs):
         """Execute the forward pass.
@@ -127,24 +127,24 @@ class Architecture_fullModel(models.Model):
         Returns:
           logits: float tensor of shape [batch_size, 10], the unnormalized logits.
         """
-        net = inputs
-        net = self._init_conv(net)
+        h = inputs
+        h = self._init_conv(h)
 
-        net = self._block1(net)
-        net = self._block2(net)
-        net = self._block3(net)
+        h = self._block1(h)
+        h = self._block2(h)
+        h = self._block3(h)
 
-        h = self._global_avg(net)
+        h = self._global_avg(h)
 
         #For simclr v2:
         h = self._simclrv2_dense(h)
-        h = self._simclrv2_relu(h)
         h = self._simclrv2_bn(h)
+        h = self._simclrv2_relu(h)
 
         #simclr v1 projection head:
         g = self._mlp_dense_in(h)
-        g = self._mlp_relu(g)
         g = self._mlp_bn(g)
+        g = self._mlp_relu(g)
         g = self._mlp_dense_out(g)
 
 
