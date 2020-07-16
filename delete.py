@@ -33,6 +33,19 @@ Notizen zu - in SimCLR paper - verwendetem Projection Head:
 
 
 class test_lr(tf.keras.optimizers.schedules.LearningRateSchedule):
+    """
+        with self.warmup_steps = tf.math.ceil(overallSteps * 0.1):
+        warmup phase takes 10% of all training steps.
+
+        If this is unwanted, also change N by solving:
+        solve cos( 2pi*(K*Warmup-Warmup) / N ) = 0 ,N       (K is 1/warmupPercent, which looks for "f(x=finalStep)=0")
+        i.e. K = 10 for 10% warmup-steps of overallSteps, K = 20 for 5% warmup-steps of overallSteps
+
+        Example: For 20% warmupSteps of overallSteps:
+        solve cos( 2pi*(5*Warmup-Warmup) / N ) = 0 ,N -> N = 16*W, so change N=16 and warmupPercent=0.2
+        For 5% warmupSteps of overallSteps:
+        solve cos( 2pi*(20*Warmup-Warmup) / N ) = 0 ,N -> N = 76*W, so change N=76 and warmupPercent=0.05
+    """
     def __init__(self, lr_max, warmup_steps=20000):
         super(test_lr, self).__init__()
 

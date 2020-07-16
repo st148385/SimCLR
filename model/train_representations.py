@@ -2,7 +2,6 @@ import os
 import logging
 import tensorflow as tf
 import tensorflow.keras as ks
-import tensorflow_addons as tfa
 import gin
 import sys
 from utils import utils_params
@@ -55,19 +54,16 @@ def get_negative_mask(batch_size):
 
 class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     """
-    with self.warmup_steps = tf.math.ceil(overallSteps * 0.1):
-    warmup phase takes 10% of all training steps.
+    Takes:\n
+    lr_max: Global maximum of learning-rate function\n
+    overallSteps: overall number of training-steps, i.e. steps per epoch * epochs\n
+    warmupDuration: Duration of warmup-phase - compared to full duration - as percentages in decimal-format,
+    i.e. warmupDuration=0.05 results in 5% linear warmup and 95% cosine decay. (Default is 0.1 meaning 10%)\n
 
-    If this is unwanted, also change N by solving:
-    solve cos( 2pi*(K*Warmup-Warmup) / N ) = 0 ,N       (K is 1/warmupPercent, which looks for "f(x=finalStep)=0")
-    i.e. K = 10 for 10% warmup-steps of overallSteps, K = 20 for 5% warmup-steps of overallSteps
-
-    Example: For 20% warmupSteps of overallSteps:
-    solve cos( 2pi*(5*Warmup-Warmup) / N ) = 0 ,N -> N = 16*W, so change N=16 and warmupPercent=0.2
-    For 5% warmupSteps of overallSteps:
-    solve cos( 2pi*(20*Warmup-Warmup) / N ) = 0 ,N -> N = 76*W, so change N=76 and warmupPercent=0.05
+    Returns:
+    learning-rate function
     """
-    def __init__(self, lr_max, overallSteps):
+    def __init__(self, lr_max, overallSteps, warmupDuration=0.1):
         super(lr_schedule, self).__init__()
 
         self.lr_max = lr_max
@@ -75,13 +71,14 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
         self.overallSteps = overallSteps
 
-        self.warmupPercent = 0.1
-        self.N = 36
+        self.warmupPercent = warmupDuration
+        self.N = int((4/self.warmupPercent)-4)
         self.warmup_steps = math.ceil(self.overallSteps * self.warmupPercent)
+
 
     def __call__(self, step):
 
-        cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (self.N * (self.warmup_steps))))
+        cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (self.N * self.warmup_steps)))
 
         lin_warmup = step * (self.warmup_steps ** -1)
 
@@ -103,7 +100,8 @@ def train(model, model_head, model_gesamt,
           tau=0.5,
           use_2optimizers=True,
           use_split_model=True,
-          use_learning_rate_scheduling=True):
+          use_learning_rate_scheduling=True,
+          warmupDuration=0.1):
     """Executes the Training Loop of SimCLR. So it trains the simclr's encoder h(•) and projection head g(•).
     Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
 
@@ -130,8 +128,8 @@ def train(model, model_head, model_gesamt,
         print("total_steps:", total_steps, "        //so warmup should be over after step:", math.ceil(total_steps * 0.1))
 
 
-        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps))
-        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps))
+        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
+        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
 
     else:
         print("Continues WITHOUT using learning rate scheduling!")

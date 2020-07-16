@@ -93,9 +93,8 @@ def gen_pipeline_train(ds_name='cifar10',
     # Cache data
     if dataset_cache:
         dataset = dataset.cache()
+
     ###Für 1% of images per label <hier> vor shuffle arbeiten
-    #Wenn Reihenfolge Bild der Klasse 0,1,2,3,4...,9,0,1,...
-    #dann .take (dataset=dataset.take(500))
 
     # Shuffle data
     if b_shuffle:
