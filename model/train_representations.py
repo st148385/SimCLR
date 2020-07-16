@@ -72,7 +72,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         self.overallSteps = overallSteps
 
         self.warmupPercent = warmupDuration
-        self.N = int((4/self.warmupPercent)-4)
+        self.N = (4/self.warmupPercent)-4
         self.warmup_steps = math.ceil(self.overallSteps * self.warmupPercent)
 
 
@@ -125,7 +125,7 @@ def train(model, model_head, model_gesamt,
         print("num_examples: ", num_examples, "         //100.000 for cifar10")
 
         total_steps = n_epochs * ( (num_examples // size_batch) - 1 )
-        print("total_steps:", total_steps, "        //so warmup should be over after step:", math.ceil(total_steps * 0.1))
+        print("total_steps:", total_steps, "        //so warmup should be over after step:", math.ceil(total_steps * warmupDuration))
 
 
         optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
