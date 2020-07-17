@@ -4,11 +4,31 @@ import cv2
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
 
-def random_apply(func, p, x):
-    """Randomly apply function func to x with probability p."""
+def random_apply(func, x, p):
+    """
+    Randomly apply function func to x with probability p.
+
+    Explanation:
+    tf.less(a,b) = true if a<b, else false
+    tf.random.uniform delivers ONE (due to shape=[]) evenly distributed float32 number in the interval [0,1]
+    ->  So tf.less compares a float32 in [0,1] with probability parameter p.
+        tf.less()=False, if a < p   , where a∈[0,1] and p=0.5
+    tf.cond(bool, true_function, false_function) returns ONE of the function depending on bool=True or False
+    ->  So the full function "random_apply(func, p, x)" returns either "lambda: func(x)" or "lambda: x" depending
+        on the result of tf.less([0,1],p)
+        ->  This means we get either
+    """
+    return tf.cond(
+        tf.less( tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32)  ,  tf.cast(p, tf.float32) ),
+        lambda: func(x),    # if tf.less()==true
+        lambda: x)          # if tf.less()==false
+
+
+def random_apply_forColorJitter(func, x, p, s):
     return tf.cond(
         tf.less(tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32), tf.cast(p, tf.float32)),
-        lambda: func(x), lambda: x)
+        lambda: func(x, s),
+        lambda: x)
 
 
 def color_jitter(x, s=1.0):
@@ -27,11 +47,11 @@ def color_drop(image):
     return image
 
 
-def color_distortion(image, s=1.0):
-    # Image is a tensor with value range in [0, 1]. "s" is the strength of color distortion.
+def color_distortion(image, strength=0.5):
+    """Image is a tensor with value range in [0, 1]. "s" is the strength of color distortion."""
 
     # Randomly apply transformation with probability p:
-    image = random_apply(color_jitter, x=image, p=0.8)
+    image = random_apply_forColorJitter(color_jitter, x=image, s=strength, p=0.8)
     image = random_apply(color_drop, x=image, p=0.2)
     return image
 
@@ -45,7 +65,7 @@ def crop_and_resize(image, height, width, minCrop=0.08):
     width: Desired image width.
 
   Returns:
-    A `height` x `width` x channels Tensor holding a random crop of `image`.
+    A (height x width x channels) Tensor holding a random crop of `image`.
   """
     bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])     #Also ist bbox ein Viereck mit (ymin,xmin,ymax,xmax)=(0,0,1,1)
     aspect_ratio = width / height

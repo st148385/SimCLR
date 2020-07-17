@@ -32,17 +32,9 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     # generate training pipeline:
     ds_train, ds_train_info = input_fn.gen_pipeline_train()
 
-    # and evalutation pipeline:
-    # ds_eval, ds_eval_info = input_fn.gen_pipeline_eval()
-    # (Evaluation is maybe in another script, cause this script will only train the model in an unsupervised way. No eval needed)
-
-
-
-
     print("print ds_train:\n", ds_train, "\n")   #<PrefetchDataset shapes: ((128, 224, 224, 3), (128, 224, 224, 3), (128, 224, 224, 3)), types: (tf.float32, tf.float32, tf.float32)>
     #print("print d_train_info:\n", ds_train_info, "\n")                    #tf_flowers
     #print("print np.shape(ds_train):\n",np.shape(ds_train),"\n")            #()
-
 
 
     # im_size=224 #Vorübergehend zum Plotten
@@ -89,10 +81,8 @@ if __name__ == '__main__':
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'   # only to use if starting from existing model
 
 
-
     # gin config files
     config_names = ['config.gin', 'architecture.gin']
-
 
 
     # start training

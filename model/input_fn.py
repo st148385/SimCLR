@@ -18,8 +18,9 @@ def gen_pipeline_train(ds_name='cifar10',
                        shuffle_buffer_size=0,
                        dataset_cache=False,
                        num_parallel_calls=10,
-                       x_size=32
-                       ):
+                       x_size=32,
+                       color_distortion_strength=1
+                      ):
     ''' Input pipeline for SimCLR training "train.py" '''
 
     # Load and prepare tensorflow dataset
@@ -53,7 +54,7 @@ def gen_pipeline_train(ds_name='cifar10',
 
         return image, label
 
-    @tf.function
+    #@tf.function
     def _map_augment(*args):        #Wird verwendet von 'dataset = dataset.map(map_func=_map_augment, num_parallel_calls=num_parallel_calls)'
         """Data augmentation takes place here.
         Returns patch1, patch2, label (for SimCLR)"""
@@ -66,10 +67,10 @@ def gen_pipeline_train(ds_name='cifar10',
             print("NOT using gaussian_blur, because dataset is cifar10: ds_name =", ds_name)
 
             x_i = random_crop_with_resize(image, x_size, x_size)
-            x_i = color_distortion(x_i)
+            x_i = color_distortion(x_i, color_distortion_strength)
 
             x_j = random_crop_with_resize(image, x_size, x_size)
-            x_j = color_distortion(x_j)
+            x_j = color_distortion(x_j, color_distortion_strength)
 
         # Please use gaussian_filter(), if dataset is NOT cifar10:
         else:
@@ -78,10 +79,10 @@ def gen_pipeline_train(ds_name='cifar10',
             x_i, x_j = gaussian_filter(image, image)
 
             x_i = random_crop_with_resize(x_i, x_size, x_size)
-            x_i = color_distortion(x_i)
+            x_i = color_distortion(x_i, color_distortion_strength)
 
             x_j = random_crop_with_resize(x_j, x_size, x_size)
-            x_j = color_distortion(x_j)
+            x_j = color_distortion(x_j, color_distortion_strength)
 
         return x_i, x_j, label
 

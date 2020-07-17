@@ -21,6 +21,7 @@ gen_pipeline_train.size_buffer_cpu = 5
 gen_pipeline_train.shuffle_buffer_size = 50000
 gen_pipeline_train.num_parallel_calls = %num_cpu_threads
 gen_pipeline_train.x_size = %dataset_image_size
+gen_pipeline_train.color_distortion_strength = 0.5
 plot_dataset.dataset_name = %ds_name
 
 # Training parameters
