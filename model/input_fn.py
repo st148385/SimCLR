@@ -8,6 +8,7 @@ from model.augmentation_functions import random_crop_with_resize
 from model.augmentation_functions import color_distortion
 
 import matplotlib.pyplot as plt
+import time
 
 @gin.configurable
 def gen_pipeline_train(ds_name='cifar10',
@@ -268,6 +269,43 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
                                             '5268:5269]+train[5270:5272]+train[5273:5275]+train[5280:5281]+train['
                                             '5283:5284]+train[5288:5289]', 'test']
                                         )
+    elif useNpercentOfCifar10==15:
+        print("Loading a 15% subset of cifar10 in label balanced fashion and additionally the standard test-set")
+        (train_examples, validation_examples), info = tfds.load(
+                                        ds_name,
+                                        data_dir=tfds_path,
+                                        with_info=True,
+                                        as_supervised=True,
+                                        shuffle_files=False,
+                                        split=[
+                                            'train[:7147]+train[7148:7161]+train[7162:7171]+train[7172:7193]+train['
+                                            '7194:7204]+train[7205:7215]+train[7217:7223]+train[7224:7227]+train['
+                                            '7228:7237]+train[7238:7242]+train[7243:7262]+train[7263:7268]+train['
+                                            '7269:7270]+train[7271:7303]+train[7304:7305]+train[7306:7314]+train['
+                                            '7315:7329]+train[7330:7334]+train[7335:7336]+train[7337:7340]+train['
+                                            '7341:7344]+train[7345:7354]+train[7355:7357]+train[7359:7360]+train['
+                                            '7362:7368]+train[7369:7371]+train[7373:7381]+train[7382:7384]+train['
+                                            '7385:7388]+train[7390:7392]+train[7393:7395]+train[7396:7398]+train['
+                                            '7399:7400]+train[7402:7405]+train[7406:7411]+train[7412:7414]+train['
+                                            '7418:7423]+train[7424:7431]+train[7432:7435]+train[7436:7439]+train['
+                                            '7440:7441]+train[7443:7447]+train[7448:7453]+train[7455:7458]+train['
+                                            '7460:7463]+train[7465:7466]+train[7467:7470]+train[7471:7475]+train['
+                                            '7477:7478]+train[7479:7482]+train[7483:7486]+train[7487:7488]+train['
+                                            '7489:7490]+train[7491:7493]+train[7494:7497]+train[7498:7499]+train['
+                                            '7500:7501]+train[7502:7503]+train[7505:7506]+train[7507:7508]+train['
+                                            '7510:7512]+train[7513:7514]+train[7515:7516]+train[7517:7518]+train['
+                                            '7520:7521]+train[7522:7525]+train[7527:7528]+train[7529:7532]+train['
+                                            '7534:7535]+train[7538:7539]+train[7542:7543]+train[7544:7545]+train['
+                                            '7546:7548]+train[7549:7551]+train[7556:7559]+train[7560:7563]+train['
+                                            '7564:7565]+train[7567:7569]+train[7571:7572]+train[7576:7578]+train['
+                                            '7579:7580]+train[7581:7582]+train[7583:7585]+train[7586:7587]+train['
+                                            '7591:7594]+train[7597:7598]+train[7600:7601]+train[7604:7607]+train['
+                                            '7609:7610]+train[7612:7613]+train[7614:7615]+train[7619:7620]+train['
+                                            '7629:7630]+train[7631:7632]+train[7633:7635]+train[7640:7641]+train['
+                                            '7646:7647]+train[7650:7651]+train[7665:7667]+train[7670:7672]+train['
+                                            '7680:7681]+train[7685:7686]+train[7687:7688]+train[7691:7692]+train['
+                                            '7705:7706]', 'test']
+                                        )
     elif useNpercentOfCifar10==20:
         print("Loading a 20% subset of cifar10 in label balanced fashion and additionally the standard test-set")
         (train_examples, validation_examples), info = tfds.load(
@@ -526,21 +564,26 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
                          'test']
         )
     else:
-        raise ValueError("useNpercentOfDataset must be either 1, 5, 10, 20, 25, 30, 35 or 50 resulting in 1%/5%/10%/20%/25%/30%/35%/50% splits")
+        raise ValueError("useNpercentOfDataset must be either 1, 5, 10, 15, 20, 25, 30, 35 or 50 resulting in 1%/5%/10%/15%/20%/25%/30%/35%/50% splits")
 
-    # num_examples = info.splits['train'].num_examples
+    num_examples = info.splits['train'].num_examples    #Always 50000 for cifar10
+    num_examples = int(num_examples * useNpercentOfCifar10/100)  #Actual num_examples when not using all labels
     num_classes = info.features['label'].num_classes
-    # num_validation_examples = info.splits['test'].num_examples
-    k=0
-    for image, label in train_examples.take(50000):
-        k+=1
-    num_examples = k
-    r=0
-    for image, label in validation_examples.take(10000):
-        r+=1
-    num_validation_examples = r
+    num_validation_examples = info.splits['test'].num_examples
+
+    # # Get the 100% correct numbers for amount of train and validation examples (Takes up to 60seconds for 50% split)
+    # k=0
+    # for image, label in train_examples.take(50000):
+    #     k+=1
+    # num_examples = k
+    # r=0
+    # for image, label in validation_examples.take(10000):
+    #     r+=1
+    # num_validation_examples = r
 
     print("num_examples: ", num_examples, "\nnum_classes: ", num_classes, "\nnum_validation_examples: ", num_validation_examples)
+
+    t0 = time.process_time()###
 
     # Double-check if the loaded cifar-10 subset is in label balanced fashion
     class0 = 0
@@ -580,7 +623,11 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
     print("In sum:", class0 + class1 + class2 + class3 + class4 + class5 + class6 + class7 + class8 + class9)
 
     if not class0==class1==class2==class3==class4==class5==class6==class7==class8==class9:
-        raise ValueError("Your cifar10 is probably not version 3.0.2")
+        raise ValueError("Your cifar10 folder is probably not version 3.0.2\n"
+                         "Due to that you've a different order of labels, which requires a new split in tfds.load()")
+
+    t1 = time.process_time() - t0###
+    print(f"Time elapsed: {t1}seconds (CPU seconds elapsed (floating point))")###
 
     # Auf IMAGE_RES formatieren und auf [0,1] normalisieren
     def format_image(image, label):

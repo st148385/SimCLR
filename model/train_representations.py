@@ -66,23 +66,34 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     def __init__(self, lr_max, overallSteps, warmupDuration=0.1):
         super(lr_schedule, self).__init__()
 
+        self.justCosineDecay = False
+
         self.lr_max = lr_max
         self.lr_max = tf.cast(self.lr_max, tf.float32)
 
         self.overallSteps = overallSteps
 
-        self.warmupPercent = warmupDuration
-        self.N = (4/self.warmupPercent)-4
-        self.warmup_steps = math.ceil(self.overallSteps * self.warmupPercent)
+        if warmupDuration==0:
+            self.justCosineDecay=True
+            print("Just using cosine decay")
+        else:
+            self.warmupPercent = warmupDuration
+            self.N = (4 / self.warmupPercent) - 4
+            self.warmup_steps = math.ceil(self.overallSteps * self.warmupPercent)
+            print(f"Using linear warmup for the first {self.warmup_steps} steps, then cosine decay till the end")
 
 
     def __call__(self, step):
 
-        cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (self.N * self.warmup_steps)))
+        if self.justCosineDecay==True:
+            return abs(self.lr_max * tf.math.cos( (0.5*pi*step) / (self.overallSteps) ))
 
-        lin_warmup = step * (self.warmup_steps ** -1)
+        else:
+            cos_decay = (tf.math.cos((2 * pi * (step - self.warmup_steps)) / (self.N * self.warmup_steps)))
 
-        return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
+            lin_warmup = step * (self.warmup_steps ** -1)
+
+            return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
 
 
 
@@ -432,3 +443,23 @@ def train_step_just1model(model, image, image2, optimizer, metric_loss_train, ep
                  "   \tcurrent lr is:", optimizer.learning_rate,
                  output_stream=sys.stdout)
     return 0
+
+
+# def anotherLossImplementation(a,b,tau):
+#         a_norm = tf.norm(a, dim=1).reshape(-1, 1)
+#         a_cap = tf.math.divide(a, a_norm)
+#         b_norm = tf.norm(b, dim=1).reshape(-1, 1)
+#         b_cap = tf.math.divide(b, b_norm)
+#         a_cap_b_cap = tf.concat([a_cap, b_cap], dim=0)
+#         a_cap_b_cap_transpose = tf.transpose(a_cap_b_cap)
+#         b_cap_a_cap = tf.concat([b_cap, a_cap], dim=0)
+#         sim = tf.matmul(a_cap_b_cap, a_cap_b_cap_transpose)
+#         sim_by_tau = tf.math.divide(sim, tau)
+#         exp_sim_by_tau = tf.exp(sim_by_tau)
+#         sum_of_rows = tf.reduce_sum(exp_sim_by_tau, dim=1)
+#         exp_sim_by_tau_diag = tf.linalg.diag_part(exp_sim_by_tau)
+#         numerators = torch.exp(torch.div(torch.nn.CosineSimilarity()(a_cap_b_cap, b_cap_a_cap), tau))
+#         denominators = sum_of_rows - exp_sim_by_tau_diag
+#         num_by_den = torch.div(numerators, denominators)
+#         neglog_num_by_den = -torch.log(num_by_den)
+#         return torch.mean(neglog_num_by_den)

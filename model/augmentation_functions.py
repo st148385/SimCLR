@@ -48,7 +48,7 @@ def color_drop(image):
 
 
 def color_distortion(image, strength=0.5):
-    """Image is a tensor with value range in [0, 1]. "s" is the strength of color distortion."""
+    """Image is a tensor with value range in [0,1]. "s" is the strength of color distortion."""
 
     # Randomly apply transformation with probability p:
     image = random_apply_forColorJitter(color_jitter, x=image, s=strength, p=0.8)

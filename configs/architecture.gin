@@ -3,7 +3,7 @@ input_size = 32 ###     # width and height in input_shapes of both: resnet-50 an
 SimCLRv2_dense = 128
 MLP_dense_in = 128
 MLP_dense_out = 128     # 128 nach SimCLR paper     #Update: every single one of the dense-layers (3 or 2 depending on version) have 128 neurons on Google's github.
-initial_filters = 2
+initial_filters = 8
 head_input_dim = 128     # 4 * initial_filters or SimCLRv2_dense if SimCLRv2 is used
 
 # Encoder h(•) using custom Resnet

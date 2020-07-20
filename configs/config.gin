@@ -21,17 +21,17 @@ gen_pipeline_train.size_buffer_cpu = 5
 gen_pipeline_train.shuffle_buffer_size = 50000
 gen_pipeline_train.num_parallel_calls = %num_cpu_threads
 gen_pipeline_train.x_size = %dataset_image_size
-gen_pipeline_train.color_distortion_strength = 0.5
+gen_pipeline_train.color_distortion_strength = 0.5      # use s=0.5 for cifar10/100. s=1.0 should be better for imagenet/flowers
 plot_dataset.dataset_name = %ds_name
 
 # Training parameters
 train.n_epochs=2
-train.learning_rate_noScheduling=0.001
-train.lr_max_ifScheduling=0.001
-train.warmupDuration=0.01   # percentage in decimal form [0,1]
+train.learning_rate_noScheduling=0.01
+train.lr_max_ifScheduling=0.01
+train.warmupDuration=0.05   # percentage in decimal form [0,1]
 train.save_period = 1
 train.size_batch = %size_batch
-train.tau = 0.1
+train.tau = 0.3
 train.use_split_model = True
 train.use_2optimizers = False
 train.use_learning_rate_scheduling = True
