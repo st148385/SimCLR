@@ -8,9 +8,74 @@ import matplotlib.pyplot as plt
 from math import pi as pi
 from tensorflow_core.python.ops.gen_image_ops import sample_distorted_bounding_box_v2
 
-import tensorflow as tf
-strategy = tf.distribute.MirroredStrategy()
-print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+# import tensorflow as tf
+# strategy = tf.distribute.MirroredStrategy()
+# print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+
+def get_negative_mask(batch_size):
+    # return a mask that removes the similarity score of equal/similar images.
+    # this function ensures that only distinct pair of images get their similarity scores
+    # passed as negative examples
+    negative_mask = np.ones((batch_size, 2 * batch_size), dtype=bool)
+    for i in range(batch_size):
+        negative_mask[i, i] = 0
+        negative_mask[i, i + batch_size] = 0
+    return tf.constant(negative_mask)
+
+def sthalles_loss(z_i, z_j, tau=0.5, batch_size=16):
+    z_i = tf.math.l2_normalize(z_i, axis=1)
+    z_j = tf.math.l2_normalize(z_j, axis=1)
+    l_pos = tf.matmul(tf.expand_dims(z_i, 1), tf.expand_dims(z_j, 2))
+    l_pos = tf.reshape(l_pos, (batch_size, 1))
+    l_pos = l_pos/tau
+    negatives = tf.concat([z_j, z_i], axis=0)
+    loss = 0
+    for positives in [z_i, z_j]:
+        l_neg = tf.tensordot(tf.expand_dims(positives, 1), tf.expand_dims(tf.transpose(negatives), 0), axes=2)
+        l_neg = tf.boolean_mask(l_neg, get_negative_mask(batch_size))
+        l_neg = tf.reshape(l_neg, (batch_size, -1))
+        l_neg = l_neg / tau
+        logits = tf.concat([l_pos, l_neg], axis=1)
+        labels = tf.zeros(batch_size, dtype=tf.int32)
+        loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,
+                                                              reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
+    loss = loss / (2 * batch_size)
+    return loss
+
+def anotherLossImplementation(a, b, tau):
+    a=tf.reshape(a, (-1,1))
+    b=tf.reshape(b, (-1,1))
+    a_norm = tf.reshape(tf.math.l2_normalize(a, axis=1), shape=(-1, 1))
+    a_hat = tf.math.divide(a, a_norm)                               # â = a / |a|
+    b_norm = tf.reshape(tensor=tf.math.l2_normalize(b, axis=1), shape=(-1, 1))
+    b_hat = tf.math.divide(b, b_norm)
+    a_hat_b_hat = tf.concat([a_hat, b_hat], axis=0)                 #All augmented images i and all images j in one vector => (BS*128*2, 1)
+    a_hat_b_hat_transpose = tf.transpose(a_hat_b_hat)               #(1, BS*128*2)
+    b_hat_a_hat = tf.concat([b_hat, a_hat], axis=0)
+    sim = tf.matmul(a_hat_b_hat, a_hat_b_hat_transpose)             #(BS*128*2, BS*128*2)
+    sim_over_tau = tf.math.divide(sim, tau)
+    exp_sim_over_tau = tf.exp(sim_over_tau)                         #(BS*128*2, BS*128*2)
+    exp_sim_over_tau_diag = tf.linalg.diag_part(exp_sim_over_tau)   #(BS*128*2,) This is the sim with k=i, so sim(z_i,z_i)
+    sum_of_rows = tf.reduce_sum(exp_sim_over_tau, axis=1)           #sum of all elements in every one line -> (BS*128*2,)
+    denominators = sum_of_rows - exp_sim_over_tau_diag              #Remove the e^(sim(zi,zi)/tau) from the sum -> Denominator/Nenner ready (4096,)
+
+    cosine_sim = tf.keras.losses.CosineSimilarity()(a_hat_b_hat, b_hat_a_hat)   #sim( [concat(â+ĉ),1] , [concat(ĉ+â),1] )  ->  <(N,1),(1,N)>  ->  scalar
+    cosine_sim_over_tau = tf.math.divide(cosine_sim, tau)
+    numerators = tf.exp(cosine_sim_over_tau)                        #Numerator/Zähler ready (scalar)
+
+    numerator_over_denominator = tf.math.divide(numerators, denominators)   #Last steps are: mean(-log(numerator/denominator))
+    negativelog_num_over_den = -tf.math.log(numerator_over_denominator)
+    return tf.math.reduce_mean(negativelog_num_over_den)
+
+tau=0.5
+a=tf.random.uniform(shape=(16,128), minval=0, maxval=1)
+b=tf.random.uniform(shape=(16,128), minval=0, maxval=1)
+c=a
+d=b
+loss_obv=anotherLossImplementation(a,b,tau)
+
+loss_sthalles=sthalles_loss(c,d)
+
 
 """
 Notizen zu - in SimCLR paper - verwendetem Projection Head:

@@ -16,7 +16,6 @@ def random_apply(func, x, p):
     tf.cond(bool, true_function, false_function) returns ONE of the function depending on bool=True or False
     ->  So the full function "random_apply(func, p, x)" returns either "lambda: func(x)" or "lambda: x" depending
         on the result of tf.less([0,1],p)
-        ->  This means we get either
     """
     return tf.cond(
         tf.less( tf.random.uniform([], minval=0, maxval=1, dtype=tf.float32)  ,  tf.cast(p, tf.float32) ),

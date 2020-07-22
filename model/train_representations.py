@@ -12,12 +12,12 @@ cosine_sim_1d = tf.keras.losses.CosineSimilarity(axis=1, reduction=tf.keras.loss
 cosine_sim_2d = tf.keras.losses.CosineSimilarity(axis=2, reduction=tf.keras.losses.Reduction.NONE)
 
 
-def _cosine_simililarity_dim1(x, y):
+def _cosine_simililarity_dim1(x, y):    #unused
     v = cosine_sim_1d(x, y)
     return v
 
 
-def _cosine_simililarity_dim2(x, y):
+def _cosine_simililarity_dim2(x, y):    #unused
     # x shape: (N, 1, C)            (N=batch_size)
     # y shape: (1, 2N, C)
     # v shape: (N, 2N)
@@ -75,7 +75,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
         if warmupDuration==0:
             self.justCosineDecay=True
-            print("Just using cosine decay")
+            print(f"Just using cosine decay over all {self.overallSteps} steps")
         else:
             self.warmupPercent = warmupDuration
             self.N = (4 / self.warmupPercent) - 4
@@ -96,6 +96,30 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
             return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
 
 
+def anotherLossImplementation(a, b, tau):
+    a=tf.reshape(a, (-1,1))
+    b=tf.reshape(b, (-1,1))
+    a_norm = tf.reshape(tf.math.l2_normalize(a, axis=1), shape=(-1, 1))
+    a_hat = tf.math.divide(a, a_norm)                               # â = a / |a|
+    b_norm = tf.reshape(tensor=tf.math.l2_normalize(b, axis=1), shape=(-1, 1))
+    b_hat = tf.math.divide(b, b_norm)
+    a_hat_b_hat = tf.concat([a_hat, b_hat], axis=0)                 #All augmented images i and all images j in one vector => (BS*128*2, 1)
+    a_hat_b_hat_transpose = tf.transpose(a_hat_b_hat)               #(1, BS*128*2)
+    b_hat_a_hat = tf.concat([b_hat, a_hat], axis=0)
+    sim = tf.matmul(a_hat_b_hat, a_hat_b_hat_transpose)             #(BS*128*2, BS*128*2)
+    sim_over_tau = tf.math.divide(sim, tau)
+    exp_sim_over_tau = tf.exp(sim_over_tau)                         #(BS*128*2, BS*128*2)
+    exp_sim_over_tau_diag = tf.linalg.diag_part(exp_sim_over_tau)   #(BS*128*2,) This is the sim with k=i, so sim(z_i,z_i)
+    sum_of_rows = tf.reduce_sum(exp_sim_over_tau, axis=1)           #sum of all elements in every one line -> (BS*128*2,)
+    denominators = sum_of_rows - exp_sim_over_tau_diag              #Remove the e^(sim(zi,zi)/tau) from the sum -> Denominator/Nenner ready (4096,)
+
+    cosine_sim = tf.keras.losses.CosineSimilarity()(a_hat_b_hat, b_hat_a_hat)   #sim( [concat(â+ĉ),1] , [concat(ĉ+â),1] )  ->  <(N,1),(1,N)>  ->  scalar
+    cosine_sim_over_tau = tf.math.divide(cosine_sim, tau)
+    numerators = tf.exp(cosine_sim_over_tau)                        #Numerator/Zähler ready (scalar)
+
+    numerator_over_denominator = tf.math.divide(numerators, denominators)   #Last steps are: mean(-log(numerator/denominator))
+    negativelog_num_over_den = -tf.math.log(numerator_over_denominator)
+    return tf.math.reduce_mean(negativelog_num_over_den)
 
 
 @gin.configurable(blacklist=['model','model_head','model_gesamt','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
@@ -252,6 +276,11 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
             h_j = model(image2, training=True)
             z_j = model_head(h_j, training=True)
 
+            ###
+            # loss_obv = 0
+            # loss_obv = anotherLossImplementation(z_i, z_j, tau)
+            # print("Loss with 'more obvious' implementation:", loss_obv)
+            ###
 
             #print("h_i:\n",h_i.shape)       #(128,128)
             #print("z_i:\n",z_i.shape)       #(128,128)
@@ -339,6 +368,7 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
 
 
             loss = loss / (2 * batch_size)
+
             tf.summary.scalar('loss', loss, step=optimizer.iterations)
 
 
@@ -445,21 +475,3 @@ def train_step_just1model(model, image, image2, optimizer, metric_loss_train, ep
     return 0
 
 
-# def anotherLossImplementation(a,b,tau):
-#         a_norm = tf.norm(a, dim=1).reshape(-1, 1)
-#         a_cap = tf.math.divide(a, a_norm)
-#         b_norm = tf.norm(b, dim=1).reshape(-1, 1)
-#         b_cap = tf.math.divide(b, b_norm)
-#         a_cap_b_cap = tf.concat([a_cap, b_cap], dim=0)
-#         a_cap_b_cap_transpose = tf.transpose(a_cap_b_cap)
-#         b_cap_a_cap = tf.concat([b_cap, a_cap], dim=0)
-#         sim = tf.matmul(a_cap_b_cap, a_cap_b_cap_transpose)
-#         sim_by_tau = tf.math.divide(sim, tau)
-#         exp_sim_by_tau = tf.exp(sim_by_tau)
-#         sum_of_rows = tf.reduce_sum(exp_sim_by_tau, dim=1)
-#         exp_sim_by_tau_diag = tf.linalg.diag_part(exp_sim_by_tau)
-#         numerators = torch.exp(torch.div(torch.nn.CosineSimilarity()(a_cap_b_cap, b_cap_a_cap), tau))
-#         denominators = sum_of_rows - exp_sim_by_tau_diag
-#         num_by_den = torch.div(numerators, denominators)
-#         neglog_num_by_den = -torch.log(num_by_den)
-#         return torch.mean(neglog_num_by_den)

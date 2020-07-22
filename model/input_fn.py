@@ -626,6 +626,8 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
         raise ValueError("Your cifar10 folder is probably not version 3.0.2\n"
                          "Due to that you've a different order of labels, which requires a new split in tfds.load()")
 
+    print(f"Succesfully loaded {int(class0/50)}% split of cifar10")
+
     t1 = time.process_time() - t0###
     print(f"Time elapsed: {t1}seconds (CPU seconds elapsed (floating point))")###
 

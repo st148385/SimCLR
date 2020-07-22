@@ -39,7 +39,7 @@ if __name__ == '__main__':
     device = '0'
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-16T09-23-51'
     #path_model_id = ''
-    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-07-11T09-43-15'
+    path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\ckptsForSSLevalRuns'
 
     # gin config files
     config_names = ['config_eval.gin', 'architecture.gin']
