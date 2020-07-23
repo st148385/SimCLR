@@ -57,7 +57,13 @@ def gen_fullModel(Architecture_fullModel, **kwargs):
     return model
 
 
+#For 'SSL in SimCLR training' idea:
+@gin.configurable()
+def gen_classifierHead(Architecture_classifierHead, **kwargs):
 
+    model = Architecture_classifierHead(**kwargs)
+
+    return model
 
 
 

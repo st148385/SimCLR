@@ -96,36 +96,14 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
             return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
 
 
-def anotherLossImplementation(a, b, tau):
-    a=tf.reshape(a, (-1,1))
-    b=tf.reshape(b, (-1,1))
-    a_norm = tf.reshape(tf.math.l2_normalize(a, axis=1), shape=(-1, 1))
-    a_hat = tf.math.divide(a, a_norm)                               # â = a / |a|
-    b_norm = tf.reshape(tensor=tf.math.l2_normalize(b, axis=1), shape=(-1, 1))
-    b_hat = tf.math.divide(b, b_norm)
-    a_hat_b_hat = tf.concat([a_hat, b_hat], axis=0)                 #All augmented images i and all images j in one vector => (BS*128*2, 1)
-    a_hat_b_hat_transpose = tf.transpose(a_hat_b_hat)               #(1, BS*128*2)
-    b_hat_a_hat = tf.concat([b_hat, a_hat], axis=0)
-    sim = tf.matmul(a_hat_b_hat, a_hat_b_hat_transpose)             #(BS*128*2, BS*128*2)
-    sim_over_tau = tf.math.divide(sim, tau)
-    exp_sim_over_tau = tf.exp(sim_over_tau)                         #(BS*128*2, BS*128*2)
-    exp_sim_over_tau_diag = tf.linalg.diag_part(exp_sim_over_tau)   #(BS*128*2,) This is the sim with k=i, so sim(z_i,z_i)
-    sum_of_rows = tf.reduce_sum(exp_sim_over_tau, axis=1)           #sum of all elements in every one line -> (BS*128*2,)
-    denominators = sum_of_rows - exp_sim_over_tau_diag              #Remove the e^(sim(zi,zi)/tau) from the sum -> Denominator/Nenner ready (4096,)
-
-    cosine_sim = tf.keras.losses.CosineSimilarity()(a_hat_b_hat, b_hat_a_hat)   #sim( [concat(â+ĉ),1] , [concat(ĉ+â),1] )  ->  <(N,1),(1,N)>  ->  scalar
-    cosine_sim_over_tau = tf.math.divide(cosine_sim, tau)
-    numerators = tf.exp(cosine_sim_over_tau)                        #Numerator/Zähler ready (scalar)
-
-    numerator_over_denominator = tf.math.divide(numerators, denominators)   #Last steps are: mean(-log(numerator/denominator))
-    negativelog_num_over_den = -tf.math.log(numerator_over_denominator)
-    return tf.math.reduce_mean(negativelog_num_over_den)
 
 
 @gin.configurable(blacklist=['model','model_head','model_gesamt','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
-def train(model, model_head, model_gesamt,
+def train(model, model_head, model_classifierHead, model_gesamt,
           ds_train,
           ds_train_info,
+          train_batches,
+          test_batches,
           run_paths,
           n_epochs=10,
           learning_rate_noScheduling=0.001,
@@ -133,7 +111,7 @@ def train(model, model_head, model_gesamt,
           save_period=1,
           size_batch=128,
           tau=0.5,
-          use_2optimizers=True,
+          use_2optimizers=False,
           use_split_model=True,
           use_learning_rate_scheduling=True,
           warmupDuration=0.1):
@@ -141,14 +119,43 @@ def train(model, model_head, model_gesamt,
     Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
 
     Pass both parts of split model and the overall model (all 3 models), so parameter "use_split_model" can be used.
-
-    When using "use_split_model=True", you train two seperate models. Therefore you can now decide, if those seperate
-    models also use two seperate optimizers via "use_2optimizers".
-    When using "use_learning_rate_scheduling=True" "warmupDuration" (percentages in decimal form) will decide, how many
-    steps the linear warmup is executed compared to the steps of cosine decay.
     """
 
-    # Use model_gesamt as model, if use_split_model==False was chosen. Now there's only one model g(h(•)).
+    ### semi-supervised stuff:
+    # Define loss
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    # Define Metrics
+    train_loss = tf.keras.metrics.Mean(name='train_loss')
+    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+
+    @tf.function
+    def train_step_SSL(images, labels):
+        with tf.GradientTape() as tape:
+            a = model(images, training=True)
+            b = model_classifierHead(a, training=True)
+            loss = loss_object(labels, b)
+        gradients = tape.gradient(loss, [model.trainable_variables,
+                                         model_classifierHead.trainable_variables])
+
+        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
+        optimizer.apply_gradients(zip(gradients[1], model_classifierHead.trainable_variables))
+
+        #tf.summary.scalar('loss', loss, step=optimizer.iterations)
+
+        train_loss(loss)
+        train_accuracy(labels, b)
+        metric_loss_train.update_state(loss)
+
+
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+                     "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
+                     output_stream=sys.stdout)
+
+        return 0
+    ### : semi-supervised stuff
+
+    #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
         model = model_gesamt
 
@@ -164,12 +171,14 @@ def train(model, model_head, model_gesamt,
         num_examples = 2 * ds_train_info.splits['train'].num_examples   # 'mal 2' wg SimCLR
         print("num_examples: ", num_examples, "         //100.000 for cifar10")
 
-        total_steps = n_epochs * ( (num_examples // size_batch) - 1 )
-        print("total_steps:", total_steps, "        //so warmup should be over after step:", math.ceil(total_steps * warmupDuration))
+        # Training auf 15% split benötigt 238 steps. Entsprechend addieren wir #SSL_Anteile * (238-#unsupervised_steps)
+        total_steps_considering_50epochs_of_15percentSSL = n_epochs * ( (num_examples // size_batch) - 1 ) \
+                                                           + (n_epochs//20+1) * (238-(num_examples // size_batch)-1)
+        print("total_steps:", total_steps_considering_50epochs_of_15percentSSL, "        //so warmup should be over after step:", math.ceil(total_steps_considering_50epochs_of_15percentSSL * warmupDuration))
 
 
-        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
-        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
+        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps_considering_50epochs_of_15percentSSL, warmupDuration=warmupDuration))
+        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps_considering_50epochs_of_15percentSSL, warmupDuration=warmupDuration))
 
     else:
         print("Continues WITHOUT using learning rate scheduling!")
@@ -193,8 +202,8 @@ def train(model, model_head, model_gesamt,
         epoch_start = 0
 
     # Checkpoint für g!
-    ckpt_head = tf.train.Checkpoint(net=model_head, opt=optimizer_head)
-    ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],    # <path_model_id>\\ckpts\\projectionhead
+    ckpt_head = tf.train.Checkpoint(net=model_classifierHead, opt=optimizer)
+    ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],
                                                    max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
 
@@ -217,27 +226,39 @@ def train(model, model_head, model_gesamt,
     for epoch in range(epoch_start, int(n_epochs)):
         # assign tf variable, graph build doesn't get triggered again
         epoch_tf.assign(epoch)
+
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
 
-        # Train
-        for image, image2, _ in ds_train:
-            # Train on batch
-            if use_split_model == True:
-                train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
-                           use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
-                           use_lrScheduling=use_learning_rate_scheduling)
-            else:
-                train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
-        # Print summary
-        if epoch <=0:
-            if use_split_model:
-                print("Summary des Encoders f(•):")
-                model.summary()
-                print("Summary des Projection Head g(•)")
-                model_head.summary()
-            else:
-                print("Summary des Gesamtmodels f(•) und g(•):")
-                model.summary()
+        if (epoch+1)%20==1:      #(epoch+1)%20=1,2,3,4,...,19,0,1,... -> "if" happens on epoch=20*n, n∈IN (0,20,40,...)
+
+            # Train SimCLR self-supervised for 1 epoch
+            for image, label in train_batches:
+                #trainsimclrwith15%cifar10->semisupervised
+                train_step_SSL(image, label)
+
+
+        else:
+            # Train SimCLR unsupervised for 20 epochs
+            for image, image2, _ in ds_train:
+
+                if use_split_model == True:
+                    train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
+                               use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
+                               use_lrScheduling=use_learning_rate_scheduling)
+                else:
+                    train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
+            # Print summary
+            if epoch <=0:
+                if use_split_model:
+                    print("Summary des Encoders f(•):")
+                    model.summary()
+                    print("Summary des Projection Head g(•):")
+                    model_head.summary()
+                else:
+                    print("Summary des Gesamtmodels f(•) und g(•):")
+                    model.summary()
+                print("Summary des Projection Head MIT classification Layer:")
+                model_classifierHead.summary()
 
         # Fetch metrics
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: fetching metrics.")
@@ -280,12 +301,6 @@ def train_step(model, model_head, image, image2, optimizer, optimizer_head, metr
             z_i = model_head(h_i, training=True)
             h_j = model(image2, training=True)
             z_j = model_head(h_j, training=True)
-
-            ###
-            # loss_obv = 0
-            # loss_obv = anotherLossImplementation(z_i, z_j, tau)
-            # print("Loss with 'more obvious' implementation:", loss_obv)
-            ###
 
             #print("h_i:\n",h_i.shape)       #(128,128)
             #print("z_i:\n",z_i.shape)       #(128,128)

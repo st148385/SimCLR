@@ -45,3 +45,9 @@ gen_fullModel.batch_norm_scale=True
 gen_fullModel.mlp_dense1 = %MLP_dense_in
 gen_fullModel.mlp_dense2 = %MLP_dense_out
 gen_fullModel.SimCLRv2_dense = %SimCLRv2_dense
+
+# Projection Head with Dense(10)
+gen_classifierHead.Architecture_classifierHead = @classifierHead
+gen_classifierHead.input_dim = %head_input_dim   #initial_filters * 4
+gen_classifierHead.mlp_dense1 = %MLP_dense_in
+gen_classifierHead.mlp_dense2 = %MLP_dense_out

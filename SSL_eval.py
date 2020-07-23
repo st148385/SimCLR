@@ -32,8 +32,6 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
                                                validation_batches=test_batches, run_paths=run_paths)
 
 
-
-
 #main()
 if __name__ == '__main__':
     device = '0'
