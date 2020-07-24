@@ -114,7 +114,9 @@ def train(model, model_head, model_classifierHead, model_gesamt,
           use_2optimizers=False,
           use_split_model=True,
           use_learning_rate_scheduling=True,
-          warmupDuration=0.1):
+          warmupDuration=0.1,
+          SSLeveryNepochs=10
+          ):
     """Executes the Training Loop of SimCLR. So it trains the simclr's encoder h(•) and projection head g(•).
     Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
 
@@ -126,8 +128,8 @@ def train(model, model_head, model_classifierHead, model_gesamt,
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     # Define Metrics
-    train_loss = tf.keras.metrics.Mean(name='train_loss')
-    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+    metric_train_loss_SSL = tf.keras.metrics.Mean(name='train_loss')
+    metric_train_accuracy_SSL = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
     @tf.function
     def train_step_SSL(images, labels):
@@ -143,9 +145,9 @@ def train(model, model_head, model_classifierHead, model_gesamt,
 
         #tf.summary.scalar('loss', loss, step=optimizer.iterations)
 
-        train_loss(loss)
-        train_accuracy(labels, b)
-        metric_loss_train.update_state(loss)
+        metric_train_loss_SSL(loss)
+        metric_train_accuracy_SSL(labels, b)
+        metric_train_loss_SSL.update_state(loss)
 
 
         tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
@@ -173,7 +175,7 @@ def train(model, model_head, model_classifierHead, model_gesamt,
 
         # Training auf 15% split benötigt 238 steps. Entsprechend addieren wir #SSL_Anteile * (238-#unsupervised_steps)
         total_steps_considering_50epochs_of_15percentSSL = n_epochs * ( (num_examples // size_batch) - 1 ) \
-                                                           + (n_epochs//20+1) * (238-(num_examples // size_batch)-1)
+                                                 + (n_epochs//SSLeveryNepochs+1) * (238-(num_examples // size_batch)-1)
         print("total_steps:", total_steps_considering_50epochs_of_15percentSSL, "        //so warmup should be over after step:", math.ceil(total_steps_considering_50epochs_of_15percentSSL * warmupDuration))
 
 
@@ -229,16 +231,23 @@ def train(model, model_head, model_classifierHead, model_gesamt,
 
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
 
-        if (epoch+1)%20==1:      #(epoch+1)%20=1,2,3,4,...,19,0,1,... -> "if" happens on epoch=20*n, n∈IN (0,20,40,...)
+        # Train SimCLR semi-supervised for 1 epoch
+        if (epoch+1) % SSLeveryNepochs == 1:      #(epoch+1)%20=1,2,3,4,...,19,0,1,... -> "if" happens on epoch=20*n, n∈IN (0,20,40,...)
 
-            # Train SimCLR self-supervised for 1 epoch
+            # Reset metrics before each actual epoch
+            metric_train_loss_SSL.reset_states()
+
             for image, label in train_batches:
-                #trainsimclrwith15%cifar10->semisupervised
                 train_step_SSL(image, label)
 
 
+
+        # Train SimCLR unsupervised for N epochs
         else:
-            # Train SimCLR unsupervised for 20 epochs
+
+            # Reset metrics before each actual epoch
+            metric_loss_train.reset_states()
+
             for image, image2, _ in ds_train:
 
                 if use_split_model == True:
@@ -260,18 +269,21 @@ def train(model, model_head, model_classifierHead, model_gesamt,
                 print("Summary des Projection Head MIT classification Layer:")
                 model_classifierHead.summary()
 
-        # Fetch metrics
+        # Fetch metrics of unsupervised epochs
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: fetching metrics.")
         loss_train_avg = metric_loss_train.result()
+        loss_SSLtrain_average = metric_train_loss_SSL.result()
 
         # Log to tensorboard
         with writer.as_default():
-            tf.summary.scalar('loss_train_average', loss_train_avg, step=epoch)
+            tf.summary.scalar('loss_unsupervisedSimCLR_train_average', loss_train_avg, step=epoch)
+            tf.summary.scalar('loss_SSLtrain_average', loss_SSLtrain_average, step=epoch)
 
-        # Reset metrics after each epoch
-        metric_loss_train.reset_states()
 
-        logging.info(f'Epoch {epoch + 1}/{n_epochs}: loss_train_average: {loss_train_avg}')
+        if (epoch+1) % SSLeveryNepochs == 1:
+            logging.info(f'Epoch {epoch + 1}/{n_epochs}: loss_SSLtrain_average: {loss_SSLtrain_average}')
+        else:
+            logging.info(f'Epoch {epoch + 1}/{n_epochs}: loss_unsupervisedSimCLR_train_average: {loss_train_avg}')
 
         # Saving checkpoints
         if epoch % save_period == 0:

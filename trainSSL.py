@@ -23,7 +23,7 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
 
     # generate semi-supervised pipeline with 15% of images
     #train_batches, test_batches = input_fn.gen_pipeline_ssl_eval('cifar10', tfds_path='/data/public/tensorflow_datasets', BATCH_SIZE=64, useNpercentOfCifar10=15)
-    train_batches, test_batches = input_fn.gen_pipeline_ssl_eval('cifar10', BATCH_SIZE=64, useNpercentOfCifar10=15)
+    train_batches, test_batches = input_fn.gen_pipeline_ssl_eval('cifar10', BATCH_SIZE=64, useNpercentOfCifar10=15, color_distortion_strength=0.5)
 
 
     # Define model
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     #path_model_id = 'C:\\Users\\Mari\\PycharmProjects\\experiments\\models\\run_2020-05-14T19-00-15'   # only to use if starting from existing model
 
     # gin config files
-    config_names = ['config.gin', 'architecture.gin']
+    config_names = ['ssl_training_config.gin', 'architecture.gin']
 
     # start training
     set_up_train(path_model_id=path_model_id, device=device, config_names=config_names)

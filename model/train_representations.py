@@ -136,7 +136,8 @@ def train(model, model_head, model_gesamt,
           use_2optimizers=True,
           use_split_model=True,
           use_learning_rate_scheduling=True,
-          warmupDuration=0.1):
+          warmupDuration=0.1
+          ):
     """Executes the Training Loop of SimCLR. So it trains the simclr's encoder h(•) and projection head g(•).
     Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
 

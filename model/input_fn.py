@@ -197,11 +197,13 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
                           BATCH_SIZE=64,
                           minCrop=0.5,
                           useNpercentOfCifar10=15,
+                          color_distortion_strength = 0.5,
                           b_shuffle=True,
                           size_buffer_cpu=5,
                           shuffle_buffer_size=0,
                           dataset_cache=False,
-                          num_parallel_calls=10):
+                          num_parallel_calls=10
+                          ):
     ''' Input pipeline for Semi-Supervised Learning for cifar-10 only! '''
 
     # Choose 'RESIZE_TO_RES' value fitting to the dataset 'ds_name'
@@ -637,8 +639,12 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
         return image, label
 
     def eval_augmentation(image, label):
-        image = tf.image.random_flip_left_right(image, seed=None)
-        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, minCrop)
+
+        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES)
+        image = color_distortion(image, color_distortion_strength)
+
+        # image = tf.image.random_flip_left_right(image, seed=None)
+        # image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, minCrop) #dummerweise ist das p=minCrop und nicht minCrop=minCrop
         return image, label
 
     # 2020-05-19 11:48:18.724911: W tensorflow/core/kernels/data/cache_dataset_ops.cc:822] The calling iterator did not fully read the dataset being cached.

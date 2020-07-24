@@ -24,6 +24,17 @@ gen_pipeline_train.x_size = %dataset_image_size
 gen_pipeline_train.color_distortion_strength = 0.5      # use s=0.5 for cifar10/100. s=1.0 should be better for imagenet/flowers
 plot_dataset.dataset_name = %ds_name
 
+
+# Input Pipeline for the semi-supervised learning epochs of the semi-supervsied SimCLR training
+gen_pipeline_ssl_eval.ds_name = %ds_name
+gen_pipeline_ssl_eval.tfds_path = %tfds_path
+gen_pipeline_ssl_eval.RESIZE_TO_RES = %dataset_image_size
+gen_pipeline_ssl_eval.BATCH_SIZE = 64
+gen_pipeline_ssl_eval.minCrop = 0.5
+gen_pipeline_ssl_eval.color_distortion_strength = 0.5
+gen_pipeline_ssl_eval.useNpercentOfCifar10=15
+
+
 # Training parameters
 train.n_epochs=11
 train.learning_rate_noScheduling=0.01
@@ -35,3 +46,4 @@ train.tau = 0.275
 train.use_split_model = True
 train.use_2optimizers = False
 train.use_learning_rate_scheduling = True
+
