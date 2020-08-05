@@ -96,8 +96,6 @@ def gen_pipeline_train(ds_name='cifar10',
     if dataset_cache:
         dataset = dataset.cache()
 
-    ###Für 1% of images per label <hier> vor shuffle arbeiten
-
     # Shuffle data
     if b_shuffle:
         if shuffle_buffer_size == 0:
@@ -122,7 +120,7 @@ def gen_pipeline_eval(ds_name='cifar10',
                       tfds_path='~/tensorflow_datasets',
                       RESIZE_TO_RES=32,
                       BATCH_SIZE=32,
-                      minCrop=0.5,
+                      minCrop=0.08,
                       b_shuffle=True,
                       size_buffer_cpu=5,
                       shuffle_buffer_size=0,
@@ -162,20 +160,22 @@ def gen_pipeline_eval(ds_name='cifar10',
 
     def eval_augmentation(image, label):
         image = tf.image.random_flip_left_right(image, seed=None)
-        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, minCrop)
+        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, p=0.5, minCrop=minCrop)
+
         return image, label
+
 
     # 2020-05-19 11:48:18.724911: W tensorflow/core/kernels/data/cache_dataset_ops.cc:822] The calling iterator did not fully read the dataset being cached.
     # In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset will be discarded.
     # This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 
     #deterministic map -> cache -> shuffle -> random map, aka augmentation (not for validation or test sets) -> batch -> prefetch
-    train_batches = train_examples.map(format_image).cache().shuffle(num_examples // 4).map(eval_augmentation).batch(BATCH_SIZE).prefetch(1)
+    train_batches = train_examples.map(format_image).cache().shuffle(num_examples).map(eval_augmentation).batch(BATCH_SIZE).prefetch(1)
     validation_batches = validation_examples.map(format_image).cache().batch(BATCH_SIZE).prefetch(1)
 
-    image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
-    image_batch = image_batch.numpy()
-    label_batch = label_batch.numpy()
+    #image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
+    #image_batch = image_batch.numpy()
+    #label_batch = label_batch.numpy()
 
     # #Plot some augmented images
     # plt.figure(figsize=(10, 9))
@@ -195,7 +195,7 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
                           tfds_path='~/tensorflow_datasets',
                           RESIZE_TO_RES=32,
                           BATCH_SIZE=64,
-                          minCrop=0.5,
+                          minCrop=0.08,
                           useNpercentOfCifar10=15,
                           color_distortion_strength = 0.5,
                           b_shuffle=True,
@@ -565,8 +565,20 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
                          '25258:25259]+train[25261:25262]+train[25265:25266]',
                          'test']
         )
+    elif useNpercentOfCifar10==100:
+        print("Loading a '100% subset' of cifar10, aka the standard cifar10 training-set and test-set. Though"
+              " better use evaluation.py with encoder.trainable=True for this")
+        (train_examples, validation_examples), info = tfds.load(
+            ds_name,
+            data_dir=tfds_path,
+            with_info=True,
+            as_supervised=True,
+            split=['train', 'test']
+            )
+
     else:
-        raise ValueError("useNpercentOfDataset must be either 1, 5, 10, 15, 20, 25, 30, 35 or 50 resulting in 1%/5%/10%/15%/20%/25%/30%/35%/50% splits")
+        raise ValueError("useNpercentOfDataset must be either 1, 5, 10, 15, 20, 25, 30, 35, 50 or 100 resulting in"
+                         " 1%/5%/10%/15%/20%/25%/30%/35%/50%/100% splits")
 
     num_examples = info.splits['train'].num_examples    #Always 50000 for cifar10
     num_examples = int(num_examples * useNpercentOfCifar10/100)  #Actual num_examples when not using all labels
@@ -640,35 +652,18 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
 
     def eval_augmentation(image, label):
 
-        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES)
-        image = color_distortion(image, color_distortion_strength)
-
         # image = tf.image.random_flip_left_right(image, seed=None)
-        # image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, minCrop) #dummerweise ist das p=minCrop und nicht minCrop=minCrop
+        # image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES)
+        # image = color_distortion(image, color_distortion_strength)
+
+        image = tf.image.random_flip_left_right(image, seed=None)
+        image = random_crop_with_resize(image, RESIZE_TO_RES, RESIZE_TO_RES, p=0.5, minCrop=minCrop)
+
         return image, label
 
-    # 2020-05-19 11:48:18.724911: W tensorflow/core/kernels/data/cache_dataset_ops.cc:822] The calling iterator did not fully read the dataset being cached.
-    # In order to avoid unexpected truncation of the dataset, the partially cached contents of the dataset will be discarded.
-    # This can happen if you have an input pipeline similar to `dataset.cache().take(k).repeat()`. You should use `dataset.take(k).cache().repeat()` instead.
 
     #deterministic map -> cache -> shuffle -> random map, aka augmentation (not for validation or test sets) -> batch -> prefetch
-    train_batches = train_examples.map(format_image).cache().shuffle(num_examples // 4).map(eval_augmentation).batch(BATCH_SIZE).prefetch(1)
+    train_batches = train_examples.map(format_image).cache().shuffle(num_examples).map(eval_augmentation).batch(BATCH_SIZE).prefetch(1)
     validation_batches = validation_examples.map(format_image).cache().batch(BATCH_SIZE).prefetch(1)
 
-    image_batch, label_batch = next(iter(train_batches.take(1)))    #Damit kann man dann alle Images eines Batches mit den zugehörigen labels plotten
-    image_batch = image_batch.numpy()
-    label_batch = label_batch.numpy()
-
-    # #Plot some augmented images
-    # plt.figure(figsize=(10, 9))
-    # for n in range(30):
-    #     plt.subplot(6, 5, n + 1)
-    #     plt.subplots_adjust(hspace=0.3)
-    #     plt.imshow(image_batch[n])
-    #     plt.axis('off')
-    # _ = plt.suptitle("Augmented")
-    # plt.show()
-
     return train_batches, validation_batches
-
-

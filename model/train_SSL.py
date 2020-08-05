@@ -96,10 +96,82 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
             return abs( (self.lr_max) * tf.math.minimum(cos_decay, lin_warmup) )
 
 
+def supervised_nt_xent_loss(z, y, temperature=0.5, base_temperature=0.07):
+    '''
+    Taken from github: https://github.com/wangz10/contrastive_loss/blob/master/losses.py
+
+    Supervised normalized temperature-scaled cross entropy loss.
+    A variant of Multi-class N-pair Loss from (Sohn 2016)
+    Later used in SimCLR (Chen et al. 2020, Khosla et al. 2020).
+    Implementation modified from:
+        - https://github.com/google-research/simclr/blob/master/objective.py
+        - https://github.com/HobbitLong/SupContrast/blob/master/losses.py
+    Args:
+        z: hidden vector of shape [bsz, n_features].
+        y: ground truth of shape [bsz].
+    '''
+    batch_size = tf.shape(z)[0]
+    contrast_count = 1
+    anchor_count = contrast_count
+    y = tf.expand_dims(y, -1)
+
+    # mask: contrastive mask of shape [bsz, bsz], mask_{i,j}=1 if sample j
+    #     has the same class as sample i. Can be asymmetric.
+    mask = tf.cast(tf.equal(y, tf.transpose(y)), tf.float32)
+    anchor_dot_contrast = tf.divide(
+        tf.matmul(z, tf.transpose(z)),
+        temperature
+    )
+    # # for numerical stability
+    logits_max = tf.reduce_max(anchor_dot_contrast, axis=1, keepdims=True)
+    logits = anchor_dot_contrast - logits_max
+    # # tile mask
+    logits_mask = tf.ones_like(mask) - tf.eye(batch_size)
+    mask = mask * logits_mask
+    # compute log_prob
+    exp_logits = tf.exp(logits) * logits_mask
+    log_prob = logits - \
+        tf.math.log((1e-6) + tf.reduce_sum(exp_logits, axis=1, keepdims=True))     #Needs addition of (1e-6), otherwise
+                                      # neither log_prob, nor mask_sum will contain NaNs, BUT log_prob * mask_sum will!
+
+    # compute mean of log-likelihood over positive
+    # this may introduce NaNs due to zero division,
+    # when a class only has one example in the batch
+    mask_sum = tf.reduce_sum(mask, axis=1)
+
+    ### Check why loss is nan
+    if tf.reduce_any(tf.math.is_nan(mask_sum)) == True:
+        raise ValueError("mask_sum error contains a NaN")
+    if tf.reduce_any(tf.math.is_nan(mask)) == True:
+        raise ValueError("mask error contains a NaN")
+    if tf.reduce_any(tf.math.is_nan(log_prob)) == True:
+        raise ValueError("log_prob contains a NaN")
+    if tf.reduce_any(tf.math.is_nan(mask * log_prob)) == True:
+        raise ValueError("mask * log_prob contains a NaN")
+    if tf.reduce_any(tf.math.is_nan(tf.reduce_sum(mask * log_prob, axis=1))) == True:
+        raise ValueError("tf.reduce_sum(mask * log_prob, axis=1) contains a NaN")
+    if tf.reduce_any(tf.math.is_nan(tf.reduce_sum(mask * log_prob, axis=1)[mask_sum > 0])) == True:
+        raise ValueError("tf.reduce_sum(mask * log_prob, axis=1)[mask_sum > 0] contains a NaN")
+    ###
+
+    mean_log_prob_pos = tf.reduce_sum(
+        mask * log_prob, axis=1)[mask_sum > 0] / (mask_sum[mask_sum > 0])
+
+    # loss
+    loss = -(temperature / base_temperature) * mean_log_prob_pos
+    # loss = tf.reduce_mean(tf.reshape(loss, [anchor_count, batch_size]))
+    loss = tf.reduce_mean(loss)
+
+    if tf.math.is_nan(loss) == True:
+        raise ValueError("loss is NaN, even though neither of 'mask', 'log_prob', 'mask_sum' or "
+                         "'mask * log_prob, axis=1)[mask_sum > 0]' contains NaNs, so 'mask_sum[mask_sum > 0]' must "
+                         "contain a zero, which makes no sense.")
+
+    return loss
 
 
 @gin.configurable(blacklist=['model','model_head','model_gesamt','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
-def train(model, model_head, model_classifierHead, model_gesamt,
+def train(model, model_head, model_classifierHead, another_model_head, model_gesamt,
           ds_train,
           ds_train_info,
           train_batches,
@@ -125,23 +197,27 @@ def train(model, model_head, model_classifierHead, model_gesamt,
 
     ### semi-supervised stuff:
     # Define loss
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    # loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     # Define Metrics
     metric_train_loss_SSL = tf.keras.metrics.Mean(name='train_loss')
     metric_train_accuracy_SSL = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
-    @tf.function
+    #another_model_head = model_head
+
+    #@tf.function
     def train_step_SSL(images, labels):
         with tf.GradientTape() as tape:
             a = model(images, training=True)
-            b = model_classifierHead(a, training=True)
-            loss = loss_object(labels, b)
+            b = another_model_head(a, training=True)
+
+            loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=1) # was base_temperature=0.07
+
         gradients = tape.gradient(loss, [model.trainable_variables,
-                                         model_classifierHead.trainable_variables])
+                                         another_model_head.trainable_variables])
 
         optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
-        optimizer.apply_gradients(zip(gradients[1], model_classifierHead.trainable_variables))
+        optimizer.apply_gradients(zip(gradients[1], another_model_head.trainable_variables))
 
         #tf.summary.scalar('loss', loss, step=optimizer.iterations)
 
@@ -160,6 +236,7 @@ def train(model, model_head, model_classifierHead, model_gesamt,
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
         model = model_gesamt
+        raise ValueError("'use_split_model = False' doesnt make sense in semi-supervised simclr training.")
 
     # Generate summary writer
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
@@ -204,7 +281,7 @@ def train(model, model_head, model_classifierHead, model_gesamt,
         epoch_start = 0
 
     # Checkpoint für g!
-    ckpt_head = tf.train.Checkpoint(net=model_classifierHead, opt=optimizer)
+    ckpt_head = tf.train.Checkpoint(net=another_model_head, opt=optimizer)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],
                                                    max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
@@ -267,7 +344,7 @@ def train(model, model_head, model_classifierHead, model_gesamt,
                     print("Summary des Gesamtmodels f(•) und g(•):")
                     model.summary()
                 print("Summary des Projection Head MIT classification Layer:")
-                model_classifierHead.summary()
+                another_model_head.summary()
 
         # Fetch metrics of unsupervised epochs
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: fetching metrics.")

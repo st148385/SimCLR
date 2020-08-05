@@ -9,7 +9,7 @@ set_devices.soft_device_placement = False
 ds_name = 'cifar10'    #'cifar10'  #'tf_flowers'
 tfds_path = '~\\tensorflow_datasets'        # if linux ~/tensorflow_datasets on server /data/public/tensorflow_datasets
 
-size_batch = 512
+size_batch = 512            # This is NOT the batch size of semi-supervised training epochs, it is just the one of unsupervised simclr training epochs
 dataset_image_size = 32     # After data-augmentation, all images have size (dataset_image_size,dataset_image_size,3)
 
 gen_pipeline_train.ds_name = %ds_name
@@ -32,14 +32,15 @@ gen_pipeline_ssl_eval.RESIZE_TO_RES = %dataset_image_size
 gen_pipeline_ssl_eval.BATCH_SIZE = 64
 gen_pipeline_ssl_eval.minCrop = 0.5
 gen_pipeline_ssl_eval.color_distortion_strength = 0.5
-gen_pipeline_ssl_eval.useNpercentOfCifar10=15
+gen_pipeline_ssl_eval.useNpercentOfCifar10 = 15
 
 
 # Training parameters
 train.n_epochs=11
+train.SSLeveryNepochs=10
 train.learning_rate_noScheduling=0.01
 train.lr_max_ifScheduling=0.01
-train.warmupDuration=0.1   # percentage in decimal form [0,1]
+train.warmupDuration=0.1   # percentage of total training-steps in decimal form [0,1]
 train.save_period = 1
 train.size_batch = %size_batch
 train.tau = 0.275

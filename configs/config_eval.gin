@@ -17,7 +17,7 @@ gen_pipeline_eval.ds_name = %ds_name
 gen_pipeline_eval.tfds_path = %tfds_path
 gen_pipeline_eval.BATCH_SIZE = 64
 gen_pipeline_eval.RESIZE_TO_RES = 32   #irrelevant for cifar10/100, flowers, imagenet
-gen_pipeline_eval.minCrop = 0.5
+gen_pipeline_eval.minCrop = 0.08
 
 n_eval_epochs = 50
 plot_path = 'aktueller_plot.png'
@@ -39,4 +39,4 @@ gen_pipeline_ssl_eval.tfds_path = %tfds_path
 gen_pipeline_ssl_eval.BATCH_SIZE = 64
 gen_pipeline_ssl_eval.RESIZE_TO_RES = 32   #irrelevant for cifar10/100, flowers, imagenet
 gen_pipeline_ssl_eval.minCrop = 0.5
-gen_pipeline_ssl_eval.useNpercentOfCifar10 = 15
+gen_pipeline_ssl_eval.useNpercentOfCifar10 = 100
