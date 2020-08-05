@@ -29,11 +29,8 @@ def evaluation_train(path_model_id = '', device='0', config_names=['config.gin']
 
     # Take the already trained (in an unsupervised way) SimCLR model and train it semi-supervised
     train_eval.custom_train_evaluation_network(simclr_encoder_h=restored_model, train_batches=train_batches,
-                                    validation_batches=test_batches, run_paths=run_paths)
-    '''from model import multiple_augs_upperbound
-    multiple_augs_upperbound.custom_train_evaluation_network(simclr_encoder_h=restored_model, train_batches=train_batches,
                                                validation_batches=test_batches, run_paths=run_paths)
-    ''' #TODO Remove
+
 
 #main()
 if __name__ == '__main__':
