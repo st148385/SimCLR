@@ -140,18 +140,18 @@ def supervised_nt_xent_loss(z, y, temperature=0.5, base_temperature=0.07):
     mask_sum = tf.reduce_sum(mask, axis=1)
 
     ### Check why loss is nan
-    if tf.reduce_any(tf.math.is_nan(mask_sum)) == True:
-        raise ValueError("mask_sum error contains a NaN")
-    if tf.reduce_any(tf.math.is_nan(mask)) == True:
-        raise ValueError("mask error contains a NaN")
-    if tf.reduce_any(tf.math.is_nan(log_prob)) == True:
-        raise ValueError("log_prob contains a NaN")
-    if tf.reduce_any(tf.math.is_nan(mask * log_prob)) == True:
-        raise ValueError("mask * log_prob contains a NaN")
-    if tf.reduce_any(tf.math.is_nan(tf.reduce_sum(mask * log_prob, axis=1))) == True:
-        raise ValueError("tf.reduce_sum(mask * log_prob, axis=1) contains a NaN")
-    if tf.reduce_any(tf.math.is_nan(tf.reduce_sum(mask * log_prob, axis=1)[mask_sum > 0])) == True:
-        raise ValueError("tf.reduce_sum(mask * log_prob, axis=1)[mask_sum > 0] contains a NaN")
+    # if tf.reduce_any(tf.math.is_nan(mask)) == True:
+    #     raise ValueError("mask contains a NaN")
+    # if tf.reduce_any(tf.math.is_nan(mask_sum)) == True:
+    #     raise ValueError("mask_sum contains a NaN")
+    # if tf.reduce_any(tf.math.is_nan(log_prob)) == True:
+    #     raise ValueError("log_prob contains a NaN")
+    # if tf.reduce_any(tf.math.is_nan(mask * log_prob)) == True:
+    #     raise ValueError("mask * log_prob contains a NaN")
+    # if tf.reduce_any(tf.math.is_nan(tf.reduce_sum(mask * log_prob, axis=1))) == True:
+    #     raise ValueError("tf.reduce_sum(mask * log_prob, axis=1) contains a NaN")
+    # if tf.reduce_any(tf.math.is_nan(tf.reduce_sum(mask * log_prob, axis=1)[mask_sum > 0])) == True:
+    #     raise ValueError("tf.reduce_sum(mask * log_prob, axis=1)[mask_sum > 0] contains a NaN")
     ###
 
     mean_log_prob_pos = tf.reduce_sum(
@@ -162,10 +162,10 @@ def supervised_nt_xent_loss(z, y, temperature=0.5, base_temperature=0.07):
     # loss = tf.reduce_mean(tf.reshape(loss, [anchor_count, batch_size]))
     loss = tf.reduce_mean(loss)
 
-    if tf.math.is_nan(loss) == True:
-        raise ValueError("loss is NaN, even though neither of 'mask', 'log_prob', 'mask_sum' or "
-                         "'mask * log_prob, axis=1)[mask_sum > 0]' contains NaNs, so 'mask_sum[mask_sum > 0]' must "
-                         "contain a zero, which makes no sense.")
+    # if tf.math.is_nan(loss) == True:
+    #     raise ValueError("loss is NaN, even though neither of 'mask', 'log_prob', 'mask_sum' or "
+    #                      "'mask * log_prob, axis=1)[mask_sum > 0]' contains NaNs, so 'mask_sum[mask_sum > 0]' must "
+    #                      "contain a zero, which makes no sense.")
 
     return loss
 
@@ -205,13 +205,13 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
 
     #another_model_head = model_head
 
-    #@tf.function
+    @tf.function
     def train_step_SSL(images, labels):
         with tf.GradientTape() as tape:
             a = model(images, training=True)
             b = another_model_head(a, training=True)
 
-            loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=1) # was base_temperature=0.07
+            loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07) # was base_temperature=0.07
 
         gradients = tape.gradient(loss, [model.trainable_variables,
                                          another_model_head.trainable_variables])
