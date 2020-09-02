@@ -195,44 +195,9 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
     Pass both parts of split model and the overall model (all 3 models), so parameter "use_split_model" can be used.
     """
 
-    ### semi-supervised stuff:
-    # Define loss
-    # loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-
-    # Define Metrics
-    metric_train_loss_SSL = tf.keras.metrics.Mean(name='train_loss')
-    metric_train_accuracy_SSL = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
-
-    #another_model_head = model_head
-
-    @tf.function
-    def train_step_SSL(images, labels):
-        with tf.GradientTape() as tape:
-            a = model(images, training=True)
-            b = another_model_head(a, training=True)
-
-            # loss = loss_object(labels, b)   # additionaly change all "another_model_head" back to "model_classifierHead"
-            loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07) # was base_temperature=0.07
-
-        gradients = tape.gradient(loss, [model.trainable_variables,
-                                         another_model_head.trainable_variables])
-
-        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
-        optimizer.apply_gradients(zip(gradients[1], another_model_head.trainable_variables))
-
-        #tf.summary.scalar('loss', loss, step=optimizer.iterations)
-
-        metric_train_loss_SSL(loss)
-        metric_train_accuracy_SSL(labels, b)
-        metric_train_loss_SSL.update_state(loss)
 
 
-        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
-                     "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
-                     output_stream=sys.stdout)
 
-        return 0
-    ### : semi-supervised stuff
 
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
@@ -251,14 +216,15 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
         num_examples = 2 * ds_train_info.splits['train'].num_examples   # 'mal 2' wg SimCLR
         print("num_examples: ", num_examples, "         //100.000 for cifar10")
 
-        # Training auf 15% split benötigt 238 steps. Entsprechend addieren wir #SSL_Anteile * (238-#unsupervised_steps)
-        total_steps_considering_50epochs_of_15percentSSL = n_epochs * ( (num_examples // size_batch) - 1 ) \
-                                                 + (n_epochs//SSLeveryNepochs+1) * (238-(num_examples // size_batch)-1)
-        print("total_steps:", total_steps_considering_50epochs_of_15percentSSL, "        //so warmup should be over after step:", math.ceil(total_steps_considering_50epochs_of_15percentSSL * warmupDuration))
+        # Jetzt haben wir 291 steps. Diese setzen sich aus 2u + 1s zusammen:
+        steps_just_unsupervised = n_epochs * ((num_examples // size_batch) - 1)
+        # Da wir jede 2 steps unsupervised jetzt noch 1 step semi-supervised ausführen:
+        total_steps = tf.math.floor(3/2 * steps_just_unsupervised)
 
+        print("total_steps:", total_steps, "        //so warmup should be over after step:", math.ceil(total_steps * warmupDuration))
 
-        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps_considering_50epochs_of_15percentSSL, warmupDuration=warmupDuration))
-        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps_considering_50epochs_of_15percentSSL, warmupDuration=warmupDuration))
+        optimizer = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
+        optimizer_head = ks.optimizers.Adam(learning_rate=lr_schedule(lr_max=lr_max_ifScheduling, overallSteps=total_steps, warmupDuration=warmupDuration))
 
     else:
         print("Continues WITHOUT using learning rate scheduling!")
@@ -282,7 +248,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
         epoch_start = 0
 
     # Checkpoint für g!
-    ckpt_head = tf.train.Checkpoint(net=another_model_head, opt=optimizer)
+    ckpt_head = tf.train.Checkpoint(net=model_classifierHead, opt=optimizer)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],
                                                    max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
@@ -309,59 +275,46 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
 
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
 
-        # Train SimCLR semi-supervised for 1 epoch
-        if (epoch+1) % SSLeveryNepochs == 1:      #(epoch+1)%20=1,2,3,4,...,19,0,1,... -> "if" happens on epoch=20*n, n∈IN (0,20,40,...)
+        # Train SimCLR semi-supervised AND unsupervised every epoch
 
-            # Reset metrics before each actual epoch
-            metric_train_loss_SSL.reset_states()
+        loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-            for image, label in train_batches:
-                train_step_SSL(image, label)
+        # Situation:
+        # ds_train besitzt (image, image2, label) der Anzahl (50000, 50000, 50000)
+        # train_batches besitzt (labeled_iamge, label) der Anzahl (7500, 7500)
+        bigger_train_batches = train_batches.concatenate(train_batches).concatenate(train_batches).concatenate(train_batches).concatenate(train_batches).concatenate(train_batches).concatenate(train_batches)
 
+        #ds_all = ds_train.concatenate(train_batches)
+        ds_all = tf.data.Dataset.zip( (ds_train, bigger_train_batches) )
 
+        for (image, image2, _), (labeled_image, label) in ds_all:
+            train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label, optimizer,
+                       optimizer_head, metric_loss_train, epoch_tf,
+                       use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
+                       use_lrScheduling=use_learning_rate_scheduling, loss_object=loss_object)
 
-        # Train SimCLR unsupervised for N epochs
-        else:
-
-            # Reset metrics before each actual epoch
-            metric_loss_train.reset_states()
-
-            for image, image2, _ in ds_train:
-
-                if use_split_model == True:
-                    train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf,
-                               use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
-                               use_lrScheduling=use_learning_rate_scheduling)
-                else:
-                    train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling)
-            # Print summary
-            if epoch <=0:
-                if use_split_model:
-                    print("Summary des Encoders f(•):")
-                    model.summary()
-                    print("Summary des Projection Head g(•):")
-                    model_head.summary()
-                else:
-                    print("Summary des Gesamtmodels f(•) und g(•):")
-                    model.summary()
-                print("Summary des Projection Head MIT classification Layer:")
-                another_model_head.summary()
+        # Print summary
+        if epoch <=0:
+            if use_split_model:
+                print("Summary des Encoders f(•):")
+                model.summary()
+                print("Summary des Projection Head g(•):")
+                model_head.summary()
+            else:
+                print("Summary des Gesamtmodels f(•) und g(•):")
+                model.summary()
+            print("Summary des Projection Head MIT classification Layer:")
+            model_classifierHead.summary()
 
         # Fetch metrics of unsupervised epochs
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: fetching metrics.")
         loss_train_avg = metric_loss_train.result()
-        loss_SSLtrain_average = metric_train_loss_SSL.result()
 
         # Log to tensorboard
         with writer.as_default():
             tf.summary.scalar('loss_unsupervisedSimCLR_train_average', loss_train_avg, step=epoch)
-            tf.summary.scalar('loss_SSLtrain_average', loss_SSLtrain_average, step=epoch)
 
-
-        if (epoch+1) % SSLeveryNepochs == 1:
-            logging.info(f'Epoch {epoch + 1}/{n_epochs}: loss_SSLtrain_average: {loss_SSLtrain_average}')
-        else:
-            logging.info(f'Epoch {epoch + 1}/{n_epochs}: loss_unsupervisedSimCLR_train_average: {loss_train_avg}')
+        logging.info(f'Epoch {epoch + 1}/{n_epochs}: loss_unsupervisedSimCLR_train_average: {loss_train_avg}')
 
         # Saving checkpoints
         if epoch % save_period == 0:
@@ -381,207 +334,77 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
     return 0
 
 
+
 @tf.function
-def train_step(model, model_head, image, image2, optimizer, optimizer_head, metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau, use_lrScheduling):
+def train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label_ssl, optimizer, optimizer_head,
+               metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau, use_lrScheduling, loss_object, gamma=1):
+
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
+            ### 1) unsupervised SimCLR loss
             h_i = model(image, training=True)
             z_i = model_head(h_i, training=True)
             h_j = model(image2, training=True)
             z_j = model_head(h_j, training=True)
 
-            #print("h_i:\n",h_i.shape)       #(128,128)
-            #print("z_i:\n",z_i.shape)       #(128,128)
-
-            #tf.print("tf.print -> h_i:\n", h_i.shape)
-            #tf.print("tf.print -> z_i:\n", z_i.shape)
-
-            ###Shapes: z_i=(128,128), h_i=(128,2048)
-
-            # normalize projection feature vectors
-            z_i = tf.math.l2_normalize(z_i, axis=1)         #Vektor z = z/||z||
-            z_j = tf.math.l2_normalize(z_j, axis=1)
-
-            #print("z_i:\n", z_i.shape)      #(128,128)
-            ###Shape: z_i=(128,128)
-
-            # tf.summary.histogram('z_i', z_i, step=optimizer.iterations)
-            # tf.summary.histogram('z_j', z_j, step=optimizer.iterations)
-
-            l_pos = _dot_simililarity_dim1(z_i, z_j)    #l_pos = tf.matmul(tf.expand_dims(x, 1), tf.expand_dims(y, 2)), d.h. shape(z_i) wird (•,1,•) und shape(z_j) wird (•,•,1)
-
-            #print("l_pos:\n", l_pos.shape)  #(128,1,1)
-
-            l_pos = tf.reshape(l_pos, (batch_size, 1) ) #l_pos erhält shape=(128,1) -> column vector
-
-            #print("l_pos:\n", l_pos.shape)  #(128,1)
-
-            l_pos = l_pos / tau
-
-            #print("l_pos:\n", l_pos.shape)  #(128,1)
-
-            # assert l_pos.shape == (batch_size, 1), "l_pos shape ist falsch!" + str(l_pos.shape)  # [N,1]
-
-            #print("z_i:\n", z_i.shape)  #(128,128)
-            #print("z_j:\n", z_j.shape)  #(128,128)
-
-            negatives = tf.concat([z_j, z_i], axis=0)   #concat: Wenn z_j shape (a,b) und z_i shape (a,b) haben, hat negatives shape (a+a,b)
-                                                        #Mit axis=1 hätte im selben Beispiel negatives die shape (a,b+b)
-
-            #print("negatives:\n", negatives.shape)  #(256,128)
-
-            loss = 0
-
-            for positives in [z_i, z_j]:
-                #print("negatives:\n", negatives.shape) #256,128
-                #print("positives:\n", positives.shape) #128,128        #positives ist 1 Mal z_i, und dann 1 Mal z_j   (z_i und z_j entsprechen halt dem ganzen Batch)
-                l_neg = _dot_simililarity_dim2(positives, negatives)    #l_neg = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
-
-                #print("l_neg:\n", l_neg.shape)         #128,256
-
-                #VORSICHT: vor der tf.boolean_mask hat l_neg 128*256=32768 Elemente.
-                #Danach ist aber die komplette Diagonale von get_negative_mask(batch_size) 'False'. Dadurch werden von l_neg durch tf.boolean_mask so viele
-                #Elemente entfernt, wie es eben Elemente in der Diagonalen gibt.
-                # (Alle Stellen mit 'False' werden aus l_neg gelöscht, sodass sie nicht berechnet werden müssen)
-
-                labels = tf.zeros(batch_size, dtype=tf.int32)
-
-                # Mask to remove positive examples from the batch of negative samples
-                l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size) # alle elemente der diagnole vervwerfen
-
-                #print("l_neg:\n", l_neg.shape)          #(32512,)       #127*256=32512, bzw. 128*254=32512
-
-                l_neg = tf.reshape(l_neg, (batch_size, -1) )
-
-                #Error: reshape (32512,) -> (128,1). Stattdessen jetzt (32512,) -> (128,32512/128)=(128,254)
-
-                #print("l_neg:\n", l_neg.shape)     #(128,254)
-
-
-                l_neg = l_neg / tau
-
-                # assert l_neg.shape == (batch_size, 2 * (batch_size - 1)), "Shape of negatives not expected." + str(l_neg.shape)
-
-                #print("l_pos:\n", l_pos.shape)         #(128,1)        (2 Images der 2N=2Batch_Size Images bilden ein positive pair)
-                #print("l_neg:\n", l_neg.shape)         #(128,254)      (Die verbleibenden 2N-2=254 Images liefern die negatives)
-
-                logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
-
-                #print("logits:\n", logits)     #(128,255)
-                ###Shape: logits=(128,2)
-
-                loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
-
-                #print("loss:\n", loss.shape)   #()   ->Skalar
-
-
-            loss = loss / (2 * batch_size)
-
-            tf.summary.scalar('loss', loss, step=optimizer.iterations)
-
-
-        #print(model.trainable_variables.shape)         #AttributeError: 'list' object has no attribute 'shape'
-
-        gradients = tape.gradient(loss, [model.trainable_variables, model_head.trainable_variables])        #gradients ist jz liste mit 2 Elementen [0] und [1]
-
-        if use_2optimizers == True:
-            optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
-            optimizer_head.apply_gradients(zip(gradients[1], model_head.trainable_variables))
-        else:
-            optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
-            optimizer.apply_gradients(zip(gradients[1], model_head.trainable_variables))
-
-        #gradients = tape.gradient(loss, model_head.trainable_variables)
-        #optimizer.apply_gradients(zip(gradients, model_head.trainable_variables))
-
-    # Update metrics
-    metric_loss_train.update_state(loss)
-    if use_lrScheduling:
-        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
-             "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
-             output_stream=sys.stdout)
-    else:
-        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
-                 "   \tcurrent lr is:", optimizer.learning_rate,
-                 output_stream=sys.stdout)
-
-    return 0
-
-
-
-@tf.function
-def train_step_just1model(model, image, image2, optimizer, metric_loss_train, epoch_tf, batch_size, tau, use_lrScheduling):
-    logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
-
-
-    with tf.device('/gpu:*'):
-        with tf.GradientTape() as tape:
-            h_i, z_i = model(image, training=True)
-            h_j, z_j = model(image2, training=True)
-
-
-            # normalize projection feature vectors
             z_i = tf.math.l2_normalize(z_i, axis=1)
             z_j = tf.math.l2_normalize(z_j, axis=1)
 
-
-            l_pos = _dot_simililarity_dim1(z_i, z_j)    #l_pos = tf.matmul(tf.expand_dims(x, 1), tf.expand_dims(y, 2)), d.h. shape(z_i) wird (•,1,•) und shape(z_j) wird (•,•,1)
-
-
-            l_pos = tf.reshape(l_pos, (batch_size, 1) ) #l_pos erhält shape=(128,1) -> column vector
-
-
+            l_pos = _dot_simililarity_dim1(z_i, z_j)
+            l_pos = tf.reshape(l_pos, (batch_size, 1) )
             l_pos = l_pos / tau
 
-
-            negatives = tf.concat([z_j, z_i], axis=0)   #concat: Wenn z_j shape (a,b) und z_i shape (a,b) haben, hat negatives shape (a+a,b)
-                                                        #Mit axis=1 hätte im selben Beispiel negatives die shape (a,b+b)
+            negatives = tf.concat([z_j, z_i], axis=0)
 
             loss = 0
 
             for positives in [z_i, z_j]:
-
-                l_neg = _dot_simililarity_dim2(positives, negatives)    #l_neg = tf.tensordot(tf.expand_dims(x, 1), tf.expand_dims(tf.transpose(y), 0), axes=2)
-
+                l_neg = _dot_simililarity_dim2(positives, negatives)
 
                 labels = tf.zeros(batch_size, dtype=tf.int32)
 
-                # Mask to remove positive examples from the batch of negative samples
-                l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )        #negative_mask = get_negative_mask(batch_size) # alle elemente der diagnole vervwerfen
-
-
+                l_neg = tf.boolean_mask( l_neg,  get_negative_mask(batch_size) )
                 l_neg = tf.reshape(l_neg, (batch_size, -1) )
-
-
                 l_neg = l_neg / tau
 
-
-                logits = tf.concat([l_pos, l_neg], axis=1)  # [N,K+1]   #"logits": "This Tensor is the quantity that is being mapped to probabilities by the Softmax"
-
+                logits = tf.concat([l_pos, l_neg], axis=1)
 
                 loss += tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)(y_pred=logits, y_true=labels)
 
-
             loss = loss / (2 * batch_size)
-            tf.summary.scalar('loss', loss, step=optimizer.iterations)
+
+            ### 2) semi-supervised loss
+            a = model(labeled_image, training=True)
+            b = model_classifierHead(a, training=True)
+
+            loss_ssl = loss_object(label_ssl, b)  # additionaly change all "another_model_head" back to "model_classifierHead"
+            # loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07)
+
+            ### 3) unsupervised and semi-supervised together
+            loss_all = loss + gamma * loss_ssl
+
+            tf.summary.scalar('loss', loss_all, step=optimizer.iterations)
 
 
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        gradients = tape.gradient(loss_all, [model.trainable_variables, model_head.trainable_variables,
+                                             model_classifierHead.trainable_variables])        #gradients ist jz liste mit 3 Elementen [0], [1] und [2]
 
+        # use 1 optimizer
+        optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
+        optimizer.apply_gradients(zip(gradients[1], model_head.trainable_variables))
+        optimizer.apply_gradients(zip(gradients[2], model_classifierHead.trainable_variables))
 
     # Update metrics
-    metric_loss_train.update_state(loss)
+    metric_loss_train.update_state(loss_all)
     if use_lrScheduling:
-        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss_all,
              "   \tcurrent lr is:", optimizer.learning_rate(tf.cast(optimizer.iterations, tf.float32)),
              output_stream=sys.stdout)
     else:
-        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss,
+        tf.print("Training loss for epoch:", epoch_tf + 1, " and step: ", optimizer.iterations, " - ", loss_all,
                  "   \tcurrent lr is:", optimizer.learning_rate,
                  output_stream=sys.stdout)
+
     return 0
-
-

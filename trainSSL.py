@@ -1,6 +1,7 @@
 import logging
 from model import input_fn, model_fn
-from model import train_SSL
+#from model import train_SSL            #Just take one of train_SSL or train_SSL_verzahnt
+from model import train_SSL_verzahnt
 from utils import utils_params, utils_misc, utils_devices
 
 
@@ -34,14 +35,25 @@ def set_up_train(path_model_id = '', device='0', config_names=['config.gin']):
     #kurzer test:
     another_projectionhead_g = model_fn.gen_headModel()
 
-    train_SSL.train(encoder_h,
-          projectionhead_g,
-          projectionhead_g_with_classifier,
-          another_projectionhead_g, #kurzer test
-          gesamtmodel_h_g,
-          ds_train, ds_train_info,      # unlabeled dataset
-          train_batches, test_batches,  # part of fully labeled dataset
-          run_paths)
+    # train_SSL.train(encoder_h,
+    #       projectionhead_g,
+    #       projectionhead_g_with_classifier,
+    #       another_projectionhead_g, #kurzer test
+    #       gesamtmodel_h_g,
+    #       ds_train, ds_train_info,      # unlabeled dataset
+    #       train_batches, test_batches,  # part of fully labeled dataset
+    #       run_paths)
+
+    # Also remove 'from model import train_SSL_verzahnt'
+    train_SSL_verzahnt.train(encoder_h,
+                             projectionhead_g,
+                             projectionhead_g_with_classifier,
+                             another_projectionhead_g,  # kurzer test
+                             gesamtmodel_h_g,
+                             ds_train, ds_train_info,  # unlabeled dataset
+                             train_batches, test_batches,  # part of fully labeled dataset
+                             run_paths)
+
 
 #main()
 if __name__ == '__main__':

@@ -648,6 +648,7 @@ def gen_pipeline_ssl_eval(ds_name='cifar10',
     # Auf IMAGE_RES formatieren und auf [0,1] normalisieren
     def format_image(image, label):
         image = tf.image.resize(image, (RESIZE_TO_RES, RESIZE_TO_RES)) / 255.0
+        label = tf.cast(label, tf.float32)  # kurzer Test
         return image, label
 
     def eval_augmentation(image, label):
