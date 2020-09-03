@@ -181,6 +181,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
           learning_rate_noScheduling=0.001,
           lr_max_ifScheduling=0.001,
           save_period=1,
+          weighting_of_ssl_portion=1,
           size_batch=128,
           tau=0.5,
           use_2optimizers=False,
@@ -192,7 +193,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
     """Executes the Training Loop of SimCLR. So it trains the simclr's encoder h(•) and projection head g(•).
     Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
 
-    Pass both parts of split model and the overall model (all 3 models), so parameter "use_split_model" can be used.
+    Pass 3 models: encoder, standard projection head and projection head with a dense(#classes).
     """
 
 
@@ -282,9 +283,9 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
 
         for (image, image2, _), (labeled_image, label) in zip(ds_train, train_batches):
             train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label, optimizer,
-                       optimizer_head, metric_loss_train, epoch_tf,
-                       use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
-                       use_lrScheduling=use_learning_rate_scheduling, loss_object=loss_object)
+                       optimizer_head, metric_loss_train, epoch_tf, use_2optimizers=use_2optimizers,
+                       batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling,
+                       loss_object=loss_object, gamma=weighting_of_ssl_portion)
 
         # Print summary
         if epoch <=0:
@@ -336,7 +337,14 @@ def train_step(model, model_head, model_classifierHead, image, image2, labeled_i
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
-            ### 1) unsupervised SimCLR loss
+            ### 1) semi-supervised loss
+            a = model(labeled_image, training=True)
+            b = model_classifierHead(a, training=True)
+
+            loss_ssl = loss_object(label_ssl, b)  # additionaly change all "another_model_head" back to "model_classifierHead"
+            # loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07)
+
+            ### 2) unsupervised SimCLR loss
             h_i = model(image, training=True)
             z_i = model_head(h_i, training=True)
             h_j = model(image2, training=True)
@@ -368,12 +376,6 @@ def train_step(model, model_head, model_classifierHead, image, image2, labeled_i
 
             loss = loss / (2 * batch_size)
 
-            ### 2) semi-supervised loss
-            a = model(labeled_image, training=True)
-            b = model_classifierHead(a, training=True)
-
-            loss_ssl = loss_object(label_ssl, b)  # additionaly change all "another_model_head" back to "model_classifierHead"
-            # loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07)
 
             ### 3) unsupervised and semi-supervised together
             loss_all = loss + gamma * loss_ssl
