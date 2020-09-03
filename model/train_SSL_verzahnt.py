@@ -269,6 +269,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
     # if using normal range (instead of tf.range) assign a epoch_tf tensor, otherwise function gets recreated every turn
     epoch_tf = tf.Variable(1, dtype=tf.int32)
 
+
     for epoch in range(epoch_start, int(n_epochs)):
         # assign tf variable, graph build doesn't get triggered again
         epoch_tf.assign(epoch)
@@ -279,15 +280,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
 
         loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-        # Situation:
-        # ds_train besitzt (image, image2, label) der Anzahl (50000, 50000, 50000)
-        # train_batches besitzt (labeled_iamge, label) der Anzahl (7500, 7500)
-        bigger_train_batches = train_batches.concatenate(train_batches).concatenate(train_batches).concatenate(train_batches).concatenate(train_batches).concatenate(train_batches).concatenate(train_batches)
-
-        #ds_all = ds_train.concatenate(train_batches)
-        ds_all = tf.data.Dataset.zip( (ds_train, bigger_train_batches) )
-
-        for (image, image2, _), (labeled_image, label) in ds_all:
+        for (image, image2, _), (labeled_image, label) in zip(ds_train, train_batches):
             train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label, optimizer,
                        optimizer_head, metric_loss_train, epoch_tf,
                        use_2optimizers=use_2optimizers, batch_size=size_batch, tau=tau,
