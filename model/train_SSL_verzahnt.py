@@ -270,6 +270,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
     # if using normal range (instead of tf.range) assign a epoch_tf tensor, otherwise function gets recreated every turn
     epoch_tf = tf.Variable(1, dtype=tf.int32)
 
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     for epoch in range(epoch_start, int(n_epochs)):
         # assign tf variable, graph build doesn't get triggered again
@@ -278,8 +279,6 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: starting training.")
 
         # Train SimCLR semi-supervised AND unsupervised every epoch
-
-        loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
         for (image, image2, _), (labeled_image, label) in zip(ds_train, train_batches):
             train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label, optimizer,
