@@ -171,7 +171,7 @@ def supervised_nt_xent_loss(z, y, temperature=0.5, base_temperature=0.07):
 
 
 @gin.configurable(blacklist=['model','model_head','model_gesamt','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
-def train(model, model_head, model_classifierHead, another_model_head, model_gesamt,
+def train(model, model_head, model_classifierHead, model_gesamt,
           ds_train,
           ds_train_info,
           train_batches,
@@ -180,6 +180,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
           n_epochs=10,
           learning_rate_noScheduling=0.001,
           lr_max_ifScheduling=0.001,
+          weighting_of_ssl_loss=1,
           save_period=1,
           size_batch=128,
           tau=0.5,
@@ -203,22 +204,20 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
     metric_train_loss_SSL = tf.keras.metrics.Mean(name='train_loss')
     metric_train_accuracy_SSL = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
-    #another_model_head = model_head
-
     @tf.function
     def train_step_SSL(images, labels):
         with tf.GradientTape() as tape:
             a = model(images, training=True)
-            b = another_model_head(a, training=True)
+            b = model_classifierHead(a, training=True)
 
             # loss = loss_object(labels, b)   # additionaly change all "another_model_head" back to "model_classifierHead"
             loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07) # was base_temperature=0.07
 
         gradients = tape.gradient(loss, [model.trainable_variables,
-                                         another_model_head.trainable_variables])
+                                         model_classifierHead.trainable_variables])
 
         optimizer.apply_gradients(zip(gradients[0], model.trainable_variables))
-        optimizer.apply_gradients(zip(gradients[1], another_model_head.trainable_variables))
+        optimizer.apply_gradients(zip(gradients[1], model_classifierHead.trainable_variables))
 
         #tf.summary.scalar('loss', loss, step=optimizer.iterations)
 
@@ -282,7 +281,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
         epoch_start = 0
 
     # Checkpoint für g!
-    ckpt_head = tf.train.Checkpoint(net=another_model_head, opt=optimizer)
+    ckpt_head = tf.train.Checkpoint(net=model_classifierHead, opt=optimizer)
     ckpt_manager_head = tf.train.CheckpointManager(ckpt_head, directory=run_paths['path_ckpts_projectionhead'],
                                                    max_to_keep=2, keep_checkpoint_every_n_hours=None)
     ckpt_head.restore(ckpt_manager_head.latest_checkpoint)
@@ -345,7 +344,7 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
                     print("Summary des Gesamtmodels f(•) und g(•):")
                     model.summary()
                 print("Summary des Projection Head MIT classification Layer:")
-                another_model_head.summary()
+                model_classifierHead.summary()
 
         # Fetch metrics of unsupervised epochs
         logging.info(f"Epoch {epoch + 1}/{n_epochs}: fetching metrics.")

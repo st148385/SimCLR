@@ -171,7 +171,7 @@ def supervised_nt_xent_loss(z, y, temperature=0.5, base_temperature=0.07):
 
 
 @gin.configurable(blacklist=['model','model_head','model_gesamt','ds_train', 'ds_train_info', 'run_paths'])     #Eine Variable in der blacklist kann über die config.gin KEINEN Wert erhalten.
-def train(model, model_head, model_classifierHead, another_model_head, model_gesamt,
+def train(model, model_head, model_classifierHead, model_gesamt,
           ds_train,
           ds_train_info,
           train_batches,
@@ -181,29 +181,27 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
           learning_rate_noScheduling=0.001,
           lr_max_ifScheduling=0.001,
           save_period=1,
-          weighting_of_ssl_portion=1,
+          weighting_of_ssl_loss=1,
           size_batch=128,
           tau=0.5,
           use_2optimizers=False,
           use_split_model=True,
           use_learning_rate_scheduling=True,
+          use_semisup_contrastive_loss=False,
           warmupDuration=0.1,
           SSLeveryNepochs=10
           ):
     """Executes the Training Loop of SimCLR. So it trains the simclr's encoder h(•) and projection head g(•).
     Also tries to load ckpts of started trainings from run_paths and saves trained checkpoints to run_paths.
 
-    Pass 3 models: encoder, standard projection head and projection head with a dense(#classes).
+    Pass 3 models: encoder, standard projection head and projection head with a classification layer dense(num_classes).
     """
-
-
-
-
 
     #Use model_gesamt as model, if use_split_model==False
     if use_split_model == False:
-        model = model_gesamt
-        raise ValueError("'use_split_model = False' doesnt make sense in semi-supervised simclr training.")
+        # unused = model_gesamt
+        print("'use_split_model = False' doesnt make sense in semi-supervised simclr training."
+              "So we'll continue as if 'use_split_model' would be True")
 
     # Generate summary writer
     writer = tf.summary.create_file_writer(os.path.dirname(run_paths['path_logs_train']))
@@ -284,7 +282,8 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
             train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label, optimizer,
                        optimizer_head, metric_loss_train, epoch_tf, use_2optimizers=use_2optimizers,
                        batch_size=size_batch, tau=tau, use_lrScheduling=use_learning_rate_scheduling,
-                       loss_object=loss_object, gamma=weighting_of_ssl_portion)
+                       loss_object=loss_object, gamma=weighting_of_ssl_loss,
+                       use_semisup_contrastive_loss=use_semisup_contrastive_loss)
 
         # Print summary
         if epoch <=0:
@@ -329,19 +328,27 @@ def train(model, model_head, model_classifierHead, another_model_head, model_ges
 
 
 @tf.function
-def train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label_ssl, optimizer, optimizer_head,
-               metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau, use_lrScheduling, loss_object, gamma=1):
+def train_step(model, model_head, model_classifierHead, image, image2, labeled_image, label_ssl, optimizer,
+               optimizer_head, metric_loss_train, epoch_tf, use_2optimizers, batch_size, tau, use_lrScheduling,
+               loss_object, gamma=1, use_semisup_contrastive_loss=False):
+    """Trains both semi-supervised and unsupervised simultaneously.
 
+    use_2optimizers and therefore the second optimizer 'optimizer_head' are unused. We could split them here too, but
+    it never helped."""
     logging.info(f'Trace indicator - train epoch - eager mode: {tf.executing_eagerly()}.')
 
     with tf.device('/gpu:*'):
         with tf.GradientTape() as tape:
             ### 1) semi-supervised loss
-            a = model(labeled_image, training=True)
-            b = model_classifierHead(a, training=True)
+            if use_semisup_contrastive_loss == True:    #uses semi-supervised contrastive loss instead of
+                a = model(labeled_image, training=True)
+                b = model_classifierHead(a, training=True)
+                loss_ssl = supervised_nt_xent_loss(b, label_ssl, temperature=tau, base_temperature=0.07)
+            else:
+                a = model(labeled_image, training=True)
+                b = model_classifierHead(a, training=True)
 
-            loss_ssl = loss_object(label_ssl, b)  # additionaly change all "another_model_head" back to "model_classifierHead"
-            # loss = supervised_nt_xent_loss(b, labels, temperature=tau, base_temperature=0.07)
+                loss_ssl = loss_object(label_ssl, b)  # additionaly change all "another_model_head" back to "model_classifierHead"
 
             ### 2) unsupervised SimCLR loss
             h_i = model(image, training=True)
