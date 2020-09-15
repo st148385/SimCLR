@@ -36,7 +36,7 @@ gen_pipeline_ssl_eval.useNpercentOfCifar10 = 15
 
 
 # Training parameters
-train.n_epochs=11
+train.n_epochs=1000
 train.SSLeveryNepochs=10
 train.learning_rate_noScheduling=0.01
 train.lr_max_ifScheduling=0.01
