@@ -25,7 +25,7 @@ gen_pipeline_train.color_distortion_strength = 0.5      # use s=0.5 for cifar10/
 plot_dataset.dataset_name = %ds_name
 
 # Training parameters
-train.n_epochs=11
+train.n_epochs=1000
 train.learning_rate_noScheduling=0.01
 train.lr_max_ifScheduling=0.01
 train.warmupDuration=0.1   # percentage of total training-steps in decimal form [0,1]
