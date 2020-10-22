@@ -97,6 +97,7 @@ class lr_schedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 
 def anotherLossImplementation(a, b, tau):
+    """This loss is completely unused"""
     a=tf.reshape(a, (-1,1))
     b=tf.reshape(b, (-1,1))
     a_norm = tf.reshape(tf.math.l2_normalize(a, axis=1), shape=(-1, 1))

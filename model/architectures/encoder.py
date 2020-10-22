@@ -26,7 +26,7 @@ class Architecture(models.Model):
           shortcut_connection: bool scalar, whether to add shortcut connection in
             each Resnet unit. If False, degenerates to a 'Plain network'.
           weight_decay: float scalar, weight for l2 regularization.
-          batch_norm_momentum: float scalar, the moving avearge decay.
+          batch_norm_momentum: float scalar, the moving average decay.
           batch_norm_epsilon: float scalar, small value to avoid divide by zero.
           batch_norm_center: bool scalar, whether to center in the batch norm.
           batch_norm_scale: bool scalar, whether to scale in the batch norm.
